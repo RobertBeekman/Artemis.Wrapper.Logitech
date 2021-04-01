@@ -63,7 +63,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
         {
             try
             {
-                NamedPipeServerStream pipeStream = new NamedPipeServerStream(
+                NamedPipeServerStream pipeStream = new(
                     PIPE_NAME,
                     PipeDirection.In,
                     NamedPipeServerStream.MaxAllowedServerInstances,
@@ -76,7 +76,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
                 await pipeStream.WaitForConnectionAsync(_cancellationTokenSource.Token);
                 _logger.Information("Client Connected, starting dedicated read thread...");
 
-                Task task = new Task(() => ProcessClientThread(pipeStream), TaskCreationOptions.LongRunning);
+                Task task = new(() => ProcessClientThread(pipeStream), TaskCreationOptions.LongRunning);
                 task.Start();
             }
             catch (Exception e)
