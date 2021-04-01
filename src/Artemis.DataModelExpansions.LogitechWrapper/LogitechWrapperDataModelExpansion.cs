@@ -23,7 +23,8 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
         public override void Enable()
         {
             _cancellationTokenSource = new CancellationTokenSource();
-            Task.Run(ServerLoop);
+            var task = new Task(ServerLoop, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning);
+            task.Start();
         }
 
         public override void Disable()
@@ -35,7 +36,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
         {
         }
 
-        private async Task ServerLoop()
+        private async void ServerLoop()
         {
             _logger.Information("Starting server loop");
             while (!_cancellationTokenSource.IsCancellationRequested)
@@ -44,17 +45,13 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
             }
         }
 
-        public void ProcessClientThread(object o)
+        public async void ProcessClientThread(NamedPipeServerStream pipeStream)
         {
-            NamedPipeServerStream pipeStream = (NamedPipeServerStream)o;
-
-            using var streamreader = new StreamReader(pipeStream);
+            using var sr = new StreamReader(pipeStream);
             while (!_cancellationTokenSource.IsCancellationRequested && pipeStream.IsConnected)
             {
-                //pipeStream.Read(new byte[2048], 0, 2048);
-                //_logger.Information("read");
-
-                HandleMessage(streamreader.ReadLine());
+                string data = await sr.ReadLineAsync();
+                //handle message here. maybe start a new task? any delay here makes the game wait
             }
             _logger.Information("Pipe stream disconnected, stopping thread...");
 
@@ -62,28 +59,29 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
             pipeStream.Dispose();
         }
 
-        private void HandleMessage(string data)
-        {
-            _logger.Information("Received pipe message : \'{data}\'", data);
-        }
-
         public async Task ProcessNextClient()
         {
             try
             {
-                NamedPipeServerStream pipeStream = new NamedPipeServerStream(PIPE_NAME, PipeDirection.In, NamedPipeServerStream.MaxAllowedServerInstances);
+                NamedPipeServerStream pipeStream = new NamedPipeServerStream(
+                    PIPE_NAME,
+                    PipeDirection.In,
+                    NamedPipeServerStream.MaxAllowedServerInstances,
+                    PipeTransmissionMode.Byte,
+                    PipeOptions.Asynchronous,
+                    2048,
+                    2048);
                 _logger.Information("Started new pipe stream, waiting for client");
 
                 await pipeStream.WaitForConnectionAsync(_cancellationTokenSource.Token);
                 _logger.Information("Client Connected, starting dedicated read thread...");
 
-                //Spawn a new thread for each request and continue waiting
-                Thread thread = new Thread(ProcessClientThread);
-                thread.Start(pipeStream);
+                Task task = new Task(() => ProcessClientThread(pipeStream), TaskCreationOptions.LongRunning);
+                task.Start();
             }
             catch (Exception e)
             {
-                _logger.Error("Error processing client",e);
+                _logger.Error("Error processing client", e);
             }
         }
     }

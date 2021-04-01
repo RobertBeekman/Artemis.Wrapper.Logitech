@@ -21,7 +21,7 @@
 #include "fmt/chrono.h"
 void log_to_file(std::string data) {
 	std::ofstream logFile;
-	logFile.open("log.txt", std::ios::out | std::ios::app);
+	logFile.open("Artemis.Wrapper.Logitech.log", std::ios::out | std::ios::app);
 
 	std::time_t t = std::time(nullptr);
 	struct tm newTime;
@@ -37,10 +37,11 @@ void log_to_file(std::string data) {
 #endif 
 
 #pragma region Static variables
-static HANDLE artemisPipe = NULL;
-static HMODULE originalDll = NULL;
+static bool initialized = false;
 static bool originalDllLoaded = false;
 static bool artemisConnected = false;
+static HANDLE artemisPipe = NULL;
+static HMODULE originalDll = NULL;
 static std::string program_name = "";
 #pragma endregion
 
@@ -138,6 +139,12 @@ bool TryConnectToPipe() {
 	return !(artemisPipe == NULL || artemisPipe == INVALID_HANDLE_VALUE);
 }
 
+void ClosePipe() {
+	CloseHandle(artemisPipe);
+	artemisConnected = false;
+	LOG("Closed pipe");
+}
+
 void WriteToPipe(std::string data) {
 	if (originalDllLoaded)
 		return;
@@ -164,8 +171,10 @@ void WriteToPipe(std::string data) {
 
 bool TryLoadOriginalDll()
 {
-	if (originalDllLoaded || originalDll != NULL)
+	if (originalDllLoaded) {
+		LOG("Tried to load original dll again, returning true");
 		return true;
+	}
 
 	HKEY registryKey;
 	LSTATUS result = RegOpenKeyExW(HKEY_LOCAL_MACHINE, REGISTRY_PATH, 0, KEY_QUERY_VALUE, &registryKey);
@@ -217,6 +226,37 @@ bool TryLoadOriginalDll()
 	return true;
 }
 
+void FreeOriginalDll() {
+	if (!originalDllLoaded)
+		return;
+
+	LogiLedInitOriginal = NULL;
+	LogiLedInitWithNameOriginal = NULL;
+	LogiLedSetTargetDeviceOriginal = NULL;
+	LogiLedSaveCurrentLightingOriginal = NULL;
+	LogiLedSetLightingOriginal = NULL;
+	LogiLedRestoreLightingOriginal = NULL;
+	LogiLedFlashLightingOriginal = NULL;
+	LogiLedPulseLightingOriginal = NULL;
+	LogiLedStopEffectsOriginal = NULL;
+	LogiLedSetLightingFromBitmapOriginal = NULL;
+	LogiLedSetLightingForKeyWithScanCodeOriginal = NULL;
+	LogiLedSetLightingForKeyWithHidCodeOriginal = NULL;
+	LogiLedSetLightingForKeyWithQuartzCodeOriginal = NULL;
+	LogiLedSetLightingForKeyWithKeyNameOriginal = NULL;
+	LogiLedSaveLightingForKeyOriginal = NULL;
+	LogiLedRestoreLightingForKeyOriginal = NULL;
+	LogiLedExcludeKeysFromBitmapOriginal = NULL;
+	LogiLedFlashSingleKeyOriginal = NULL;
+	LogiLedPulseSingleKeyOriginal = NULL;
+	LogiLedStopEffectsOnKeyOriginal = NULL;
+	LogiLedShutdownOriginal = NULL;
+	FreeLibrary(originalDll);
+	originalDll = NULL;
+	originalDllLoaded = false;
+	LOG("Freed original dll");
+}
+
 bool IsProgramNameBlacklisted(std::string name) {
 	return name == "Artemis.UI.exe";
 }
@@ -245,6 +285,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 #pragma region Exports
 bool LogiLedInit()
 {
+	if (initialized) {
+		LOG("Program tried to initialize twice, returning true");
+		return true;
+	}
+
 	LOG("LogiLedInit Called");
 	bool blacklisted = IsProgramNameBlacklisted(program_name);
 	if (!blacklisted) {
@@ -254,6 +299,7 @@ bool LogiLedInit()
 		if (artemisConnected) {
 			LOG("Connected to pipe.");
 			WriteToPipe("LogiLedInit: " + program_name);
+			initialized = true;
 			return true;
 		}
 		else {
@@ -270,9 +316,10 @@ bool LogiLedInit()
 	originalDllLoaded = TryLoadOriginalDll();
 
 	if (originalDllLoaded) {
+		initialized = true;
 		return LogiLedInitOriginal();
 	}
-
+	initialized = false;
 	return false;
 }
 
@@ -498,39 +545,29 @@ bool LogiLedStopEffectsOnKey(LogiLed::KeyName keyName)
 
 void LogiLedShutdown()
 {
-	if (artemisConnected) {
-		WriteToPipe("LogiLedShutdown");
-		CloseHandle(artemisPipe);
-		artemisConnected = false;
+	if (!initialized)
 		return;
+	
+	LOG("LogiLedShutdown called");
+
+	if (artemisConnected) {
+		LOG("Informing artemis and closing pipe...");
+		WriteToPipe("LogiLedShutdown");
+		ClosePipe();
 	}
+
 	if (originalDllLoaded) {
+		LOG("Calling original shutdown and freeing original dll...");
+
 		LogiLedShutdownOriginal();
 
-		LogiLedInitOriginal = NULL;
-		LogiLedInitWithNameOriginal = NULL;
-		LogiLedSetTargetDeviceOriginal = NULL;
-		LogiLedSaveCurrentLightingOriginal = NULL;
-		LogiLedSetLightingOriginal = NULL;
-		LogiLedRestoreLightingOriginal = NULL;
-		LogiLedFlashLightingOriginal = NULL;
-		LogiLedPulseLightingOriginal = NULL;
-		LogiLedStopEffectsOriginal = NULL;
-		LogiLedSetLightingFromBitmapOriginal = NULL;
-		LogiLedSetLightingForKeyWithScanCodeOriginal = NULL;
-		LogiLedSetLightingForKeyWithHidCodeOriginal = NULL;
-		LogiLedSetLightingForKeyWithQuartzCodeOriginal = NULL;
-		LogiLedSetLightingForKeyWithKeyNameOriginal = NULL;
-		LogiLedSaveLightingForKeyOriginal = NULL;
-		LogiLedRestoreLightingForKeyOriginal = NULL;
-		LogiLedExcludeKeysFromBitmapOriginal = NULL;
-		LogiLedFlashSingleKeyOriginal = NULL;
-		LogiLedPulseSingleKeyOriginal = NULL;
-		LogiLedStopEffectsOnKeyOriginal = NULL;
-		LogiLedShutdownOriginal = NULL;
-		FreeLibrary(originalDll);
-		originalDllLoaded = false;
+		FreeOriginalDll();
 	}
+
+	if(!artemisConnected && !originalDllLoaded)
+		LOG("Exiting without doing anything. Fix?");
+
+	initialized = false;
 	return;
 }
 #pragma endregion
