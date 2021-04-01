@@ -1,0 +1,7 @@
+{
+  "Guid": "c6dda69b-f45a-496c-9d1b-fce915c96869",
+  "Name": "Artemis.Wrapper.Logitech",
+  "Description": "This is my awesome plugin",
+  "Version": "1.0.0.0",
+  "Main": "Artemis.DataModelExpansions.LogitechWrapper.dll"
+}
