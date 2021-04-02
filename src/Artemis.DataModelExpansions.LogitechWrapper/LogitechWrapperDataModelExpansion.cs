@@ -51,6 +51,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
             while (!_cancellationTokenSource.IsCancellationRequested && pipeStream.IsConnected)
             {
                 string data = await sr.ReadLineAsync();
+                Task.Run(() => _logger.Information(data));
                 //handle message here. maybe start a new task? any delay here makes the game wait
             }
             _logger.Information("Pipe stream disconnected, stopping thread...");

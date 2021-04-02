@@ -164,7 +164,7 @@ void ClosePipe() {
 	LOG("Closed pipe");
 }
 
-void WriteToPipe(std::string data) {
+void WriteToPipe(LPCVOID data, DWORD dataLength) {
 	if (isOriginalDllLoaded)
 		return;
 
@@ -176,23 +176,28 @@ void WriteToPipe(std::string data) {
 		}
 		LOG("Pipe connection reestablished");
 	}
-	LOG(fmt::format("Writing to pipe: \'{}\'" , data));
-	DWORD writtenLength;
-	data.push_back('\n');
-	const char* cData = data.c_str();
-	DWORD cDataLength = (DWORD)strlen(cData);
 
-	BOOL bResult = WriteFile(
+	DWORD writtenLength;
+	BOOL result = WriteFile(
 		artemisPipe,
-		cData,
-		cDataLength,
+		data,
+		dataLength,
 		&writtenLength,
 		NULL);
 
-	if ((!bResult) || (writtenLength < cDataLength)) {
-		LOG(fmt::format("Error writing to pipe: \'{error}\'. Wrote {bytes} bytes out of {total}", bResult, writtenLength, cDataLength));
+	if ((!result) || (writtenLength < dataLength)) {
+		LOG(fmt::format("Error writing to pipe: \'{error}\'. Wrote {bytes} bytes out of {total}", result, writtenLength, dataLength));
 		ClosePipe();
 	}
+}
+
+void WriteStringToPipe(std::string data) {
+	LOG(fmt::format("Writing to pipe: \'{}\'" , data));
+
+	data.push_back('\n');
+	const char* cData = data.c_str();
+
+	WriteToPipe(cData, (DWORD)strlen(cData));
 }
 #pragma endregion
 
@@ -325,7 +330,7 @@ bool LogiLedInit()
 		ConnectToPipe();
 
 		if (isPipeConnected) {
-			WriteToPipe("LogiLedInit: " + program_name);
+			WriteStringToPipe("LogiLedInit: " + program_name);
 			isInitialized = true;
 			return true;
 		}
@@ -349,7 +354,7 @@ bool LogiLedInit()
 bool LogiLedInitWithName(const char name[])
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedInitWithName: " + std::string(name));
+		WriteStringToPipe("LogiLedInitWithName: " + std::string(name));
 		return true;
 	}
 
@@ -363,7 +368,7 @@ bool LogiLedInitWithName(const char name[])
 bool LogiLedSetTargetDevice(int targetDevice)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedSetTargetDevice");
+		WriteStringToPipe("LogiLedSetTargetDevice");
 		return true;
 	}
 
@@ -377,7 +382,7 @@ bool LogiLedSetTargetDevice(int targetDevice)
 bool LogiLedSaveCurrentLighting()
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedSaveCurrentLighting");
+		WriteStringToPipe("LogiLedSaveCurrentLighting");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -389,7 +394,7 @@ bool LogiLedSaveCurrentLighting()
 bool LogiLedSetLighting(int redPercentage, int greenPercentage, int bluePercentage)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedSetLighting");
+		WriteStringToPipe("LogiLedSetLighting");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -401,7 +406,7 @@ bool LogiLedSetLighting(int redPercentage, int greenPercentage, int bluePercenta
 bool LogiLedRestoreLighting()
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedRestoreLighting");
+		WriteStringToPipe("LogiLedRestoreLighting");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -413,7 +418,7 @@ bool LogiLedRestoreLighting()
 bool LogiLedFlashLighting(int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedFlashLighting");
+		WriteStringToPipe("LogiLedFlashLighting");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -425,7 +430,7 @@ bool LogiLedFlashLighting(int redPercentage, int greenPercentage, int bluePercen
 bool LogiLedPulseLighting(int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedPulseLighting");
+		WriteStringToPipe("LogiLedPulseLighting");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -437,7 +442,7 @@ bool LogiLedPulseLighting(int redPercentage, int greenPercentage, int bluePercen
 bool LogiLedStopEffects()
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedStopEffects");
+		WriteStringToPipe("LogiLedStopEffects");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -449,7 +454,7 @@ bool LogiLedStopEffects()
 bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedSetLightingFromBitmap");
+		WriteStringToPipe("LogiLedSetLightingFromBitmap");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -461,7 +466,7 @@ bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int greenPercentage, int bluePercentage)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedSetLightingForKeyWithScanCode");
+		WriteStringToPipe("LogiLedSetLightingForKeyWithScanCode");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -473,7 +478,7 @@ bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int gr
 bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int greenPercentage, int bluePercentage)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedSetLightingForKeyWithHidCode");
+		WriteStringToPipe("LogiLedSetLightingForKeyWithHidCode");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -485,7 +490,7 @@ bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int gre
 bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int greenPercentage, int bluePercentage)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedSetLightingForKeyWithQuartzCode");
+		WriteStringToPipe("LogiLedSetLightingForKeyWithQuartzCode");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -497,7 +502,7 @@ bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int 
 bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedSetLightingForKeyWithKeyName");
+		WriteStringToPipe("LogiLedSetLightingForKeyWithKeyName");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -509,7 +514,7 @@ bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercen
 bool LogiLedSaveLightingForKey(LogiLed::KeyName keyName)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedSaveLightingForKey");
+		WriteStringToPipe("LogiLedSaveLightingForKey");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -521,7 +526,7 @@ bool LogiLedSaveLightingForKey(LogiLed::KeyName keyName)
 bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedRestoreLightingForKey");
+		WriteStringToPipe("LogiLedRestoreLightingForKey");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -533,7 +538,7 @@ bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage, int msDuration, int msInterval)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedFlashSingleKey");
+		WriteStringToPipe("LogiLedFlashSingleKey");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -545,7 +550,7 @@ bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int gree
 bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int startGreenPercentage, int startBluePercentage, int finishRedPercentage, int finishGreenPercentage, int finishBluePercentage, int msDuration, bool isInfinite)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedPulseSingleKey");
+		WriteStringToPipe("LogiLedPulseSingleKey");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -557,7 +562,7 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 bool LogiLedStopEffectsOnKey(LogiLed::KeyName keyName)
 {
 	if (isPipeConnected) {
-		WriteToPipe("LogiLedStopEffectsOnKey");
+		WriteStringToPipe("LogiLedStopEffectsOnKey");
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -575,7 +580,7 @@ void LogiLedShutdown()
 
 	if (isPipeConnected) {
 		LOG("Informing artemis and closing pipe...");
-		WriteToPipe("LogiLedShutdown");
+		WriteStringToPipe("LogiLedShutdown");
 		ClosePipe();
 	}
 
