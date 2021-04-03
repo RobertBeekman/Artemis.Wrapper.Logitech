@@ -193,11 +193,31 @@ void WriteToPipe(LPCVOID data, DWORD dataLength) {
 
 void WriteStringToPipe(std::string data) {
 	LOG(fmt::format("Writing to pipe: \'{}\'" , data));
-
-	data.push_back('\n');
+	//data.push_back('\n');
 	const char* cData = data.c_str();
+	unsigned int cDataLength = strlen(cData) + 1;
 
-	WriteToPipe(cData, (DWORD)strlen(cData));
+	unsigned int logCommand = 0;
+	unsigned int arraySize = 
+		sizeof(unsigned int) + //length
+		sizeof(unsigned int) + //command
+		cDataLength;
+
+	unsigned char* buff = new unsigned char[arraySize] { 0 };
+	unsigned int buffPtr = 0;
+
+	memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+	buffPtr += sizeof(arraySize);
+
+	memcpy(&buff[buffPtr], &logCommand, sizeof(logCommand));
+	buffPtr += sizeof(logCommand);
+
+	memcpy(&buff[buffPtr], cData, cDataLength);
+	buffPtr += cDataLength;
+
+	WriteToPipe(buff, arraySize);
+
+	delete[] buff;
 }
 #pragma endregion
 
@@ -394,7 +414,28 @@ bool LogiLedSaveCurrentLighting()
 bool LogiLedSetLighting(int redPercentage, int greenPercentage, int bluePercentage)
 {
 	if (isPipeConnected) {
-		WriteStringToPipe("LogiLedSetLighting");
+		const unsigned int setLightingCommand = 1;
+		const unsigned int arraySize =
+			sizeof(unsigned int) + //length
+			sizeof(unsigned int) + //command
+			sizeof(unsigned int);
+
+		unsigned char buff[arraySize];
+		unsigned int buffPtr = 0;
+
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
+
+		memcpy(&buff[buffPtr], &setLightingCommand, sizeof(setLightingCommand));
+		buffPtr += sizeof(setLightingCommand);
+
+		buff[buffPtr++] = (unsigned char)((double)redPercentage / 100.0 * 255.0);
+		buff[buffPtr++] = (unsigned char)((double)greenPercentage / 100.0 * 255.0);
+		buff[buffPtr++] = (unsigned char)((double)bluePercentage / 100.0 * 255.0);
+		buff[buffPtr++] = 0;
+
+		WriteToPipe(buff, arraySize);
+
 		return true;
 	}
 	if (isOriginalDllLoaded) {

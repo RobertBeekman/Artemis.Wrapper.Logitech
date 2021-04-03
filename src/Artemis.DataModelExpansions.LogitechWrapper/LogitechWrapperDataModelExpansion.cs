@@ -6,6 +6,8 @@ using System.IO;
 using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
+using SkiaSharp;
 
 namespace Artemis.DataModelExpansions.LogitechWrapper
 {
@@ -47,17 +49,49 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
 
         public async void ProcessClientThread(NamedPipeServerStream pipeStream)
         {
-            using var sr = new StreamReader(pipeStream);
+            using var sr = new BinaryReader(pipeStream, Encoding.UTF8);
             while (!_cancellationTokenSource.IsCancellationRequested && pipeStream.IsConnected)
             {
-                string data = await sr.ReadLineAsync();
-                Task.Run(() => _logger.Information(data));
-                //handle message here. maybe start a new task? any delay here makes the game wait
+                //packet structure:
+                //4 bytes = packet length
+                //4 bytes = command id
+                //(total - 8) bytes = whatever other data is left
+
+                var lengthBuffer = new byte[4];
+                if (await pipeStream.ReadAsync(lengthBuffer.AsMemory(), _cancellationTokenSource.Token) < 4)
+                {
+                    //log?
+                    break;
+                }
+                var packet = new byte[BitConverter.ToUInt32(lengthBuffer) - sizeof(uint)];
+                if (await pipeStream.ReadAsync(packet.AsMemory(), _cancellationTokenSource.Token) < packet.Length)
+                {
+                    //log?
+                    break;
+                }
+                Task.Run(() => ProcessMessage(BitConverter.ToUInt32(packet, 0), packet.AsSpan(sizeof(uint))));
             }
             _logger.Information("Pipe stream disconnected, stopping thread...");
 
             pipeStream.Close();
             pipeStream.Dispose();
+        }
+
+        private void ProcessMessage(uint commandId, ReadOnlySpan<byte> span)
+        {
+            switch (commandId)
+            {
+                case 0:
+                    var s = Encoding.UTF8.GetString(span);
+                    _logger.Information(s);
+                    break;
+                case 1:
+                    DataModel.SetLighting = new SKColor(span[0], span[1], span[2]);
+                    break;
+                default:
+                    _logger.Information("Unknown command id: {}. Array: {}", commandId, span.ToArray());
+                    break;
+            }
         }
 
         public async Task ProcessNextClient()
