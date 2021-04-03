@@ -6,6 +6,7 @@
 
 #define PIPE_NAME L"\\\\.\\pipe\\Artemis\\Logitech"
 #define ARTEMIS_REG_NAME L"Artemis"
+#define ARTEMIS_EXE_NAME "Artemis.UI.exe"
 
 #ifdef _WIN64
 #define REGISTRY_PATH L"SOFTWARE\\Classes\\CLSID\\{a6519e67-7632-4375-afdf-caa889744403}\\ServerBinary" 
@@ -72,50 +73,6 @@ enum LogiCommands : unsigned int {
 	Shutdown,
 };
 
-#pragma region FuncPointer typedefs
-typedef void (*FuncVoid)();
-typedef bool (*FuncBool)();
-typedef bool (*FuncBoolName)(const char name[]);
-typedef bool (*FuncBoolBitmap)(unsigned char bitmap[]);
-typedef bool (*FuncBoolDeviceType)(int targetDevice);
-typedef bool (*FuncBoolKeyName)(LogiLed::KeyName keyName);
-typedef bool (*FuncBoolKeyNames)(LogiLed::KeyName* keyList, int listCount);
-typedef bool (*FuncBoolColors)(int redPercentage, int greenPercentage, int bluePercentage);
-typedef bool (*FuncBoolKeyCodeColor)(int keyCode, int redPercentage, int greenPercentage, int bluePercentage);
-typedef bool (*FuncBoolKeyNameColor)(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage);
-typedef bool (*FuncBoolColorInterval)(int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval);
-typedef bool (*FuncBoolFlashSingleKey)(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval);
-typedef bool (*FuncBoolPulseSingleKey)(LogiLed::KeyName keyName, int startRedPercentage, int startGreenPercentage, int startBluePercentage, int finishRedPercentage, int finishGreenPercentage, int finishBluePercentage, int msDuration, bool isInfinite);
-#pragma endregion
-
-#pragma region Original Dll Methods
-FuncBool LogiLedInitOriginal;
-FuncBoolName LogiLedInitWithNameOriginal;
-
-FuncBoolDeviceType LogiLedSetTargetDeviceOriginal;
-FuncBool LogiLedSaveCurrentLightingOriginal;
-FuncBoolColors LogiLedSetLightingOriginal;
-FuncBool LogiLedRestoreLightingOriginal;
-FuncBoolColorInterval LogiLedFlashLightingOriginal;
-FuncBoolColorInterval LogiLedPulseLightingOriginal;
-FuncBool LogiLedStopEffectsOriginal;
-
-FuncBoolBitmap LogiLedSetLightingFromBitmapOriginal;
-FuncBoolKeyCodeColor LogiLedSetLightingForKeyWithScanCodeOriginal;
-FuncBoolKeyCodeColor LogiLedSetLightingForKeyWithHidCodeOriginal;
-FuncBoolKeyCodeColor LogiLedSetLightingForKeyWithQuartzCodeOriginal;
-FuncBoolKeyNameColor LogiLedSetLightingForKeyWithKeyNameOriginal;
-FuncBoolKeyName LogiLedSaveLightingForKeyOriginal;
-FuncBoolKeyName LogiLedRestoreLightingForKeyOriginal;
-FuncBoolKeyNames LogiLedExcludeKeysFromBitmapOriginal;
-
-FuncBoolFlashSingleKey LogiLedFlashSingleKeyOriginal;
-FuncBoolPulseSingleKey LogiLedPulseSingleKeyOriginal;
-FuncBoolKeyName LogiLedStopEffectsOnKeyOriginal;
-
-FuncVoid LogiLedShutdownOriginal;
-#pragma endregion
-
 #pragma region Static variables
 static bool isInitialized = false;
 static bool isPipeConnected = false;
@@ -162,16 +119,145 @@ std::string GetCallerPath()
 }
 #pragma endregion
 
-#pragma region Inline helpers
-inline bool IsProgramNameBlacklisted(const std::string name) {
-	return name == "Artemis.UI.exe";
+#pragma region Dll Management
+#pragma region FuncPointer typedefs
+typedef void (*FuncVoid)();
+typedef bool (*FuncBool)();
+typedef bool (*FuncBoolName)(const char name[]);
+typedef bool (*FuncBoolBitmap)(unsigned char bitmap[]);
+typedef bool (*FuncBoolDeviceType)(int targetDevice);
+typedef bool (*FuncBoolKeyName)(LogiLed::KeyName keyName);
+typedef bool (*FuncBoolKeyNames)(LogiLed::KeyName* keyList, int listCount);
+typedef bool (*FuncBoolColors)(int redPercentage, int greenPercentage, int bluePercentage);
+typedef bool (*FuncBoolKeyCodeColor)(int keyCode, int redPercentage, int greenPercentage, int bluePercentage);
+typedef bool (*FuncBoolKeyNameColor)(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage);
+typedef bool (*FuncBoolColorInterval)(int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval);
+typedef bool (*FuncBoolFlashSingleKey)(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval);
+typedef bool (*FuncBoolPulseSingleKey)(LogiLed::KeyName keyName, int startRedPercentage, int startGreenPercentage, int startBluePercentage, int finishRedPercentage, int finishGreenPercentage, int finishBluePercentage, int msDuration, bool isInfinite);
+#pragma endregion //FuncPointer typedefs
+
+#pragma region Original Dll Functions
+FuncBool LogiLedInitOriginal;
+FuncBoolName LogiLedInitWithNameOriginal;
+
+FuncBoolDeviceType LogiLedSetTargetDeviceOriginal;
+FuncBool LogiLedSaveCurrentLightingOriginal;
+FuncBoolColors LogiLedSetLightingOriginal;
+FuncBool LogiLedRestoreLightingOriginal;
+FuncBoolColorInterval LogiLedFlashLightingOriginal;
+FuncBoolColorInterval LogiLedPulseLightingOriginal;
+FuncBool LogiLedStopEffectsOriginal;
+
+FuncBoolBitmap LogiLedSetLightingFromBitmapOriginal;
+FuncBoolKeyCodeColor LogiLedSetLightingForKeyWithScanCodeOriginal;
+FuncBoolKeyCodeColor LogiLedSetLightingForKeyWithHidCodeOriginal;
+FuncBoolKeyCodeColor LogiLedSetLightingForKeyWithQuartzCodeOriginal;
+FuncBoolKeyNameColor LogiLedSetLightingForKeyWithKeyNameOriginal;
+FuncBoolKeyName LogiLedSaveLightingForKeyOriginal;
+FuncBoolKeyName LogiLedRestoreLightingForKeyOriginal;
+FuncBoolKeyNames LogiLedExcludeKeysFromBitmapOriginal;
+
+FuncBoolFlashSingleKey LogiLedFlashSingleKeyOriginal;
+FuncBoolPulseSingleKey LogiLedPulseSingleKeyOriginal;
+FuncBoolKeyName LogiLedStopEffectsOnKeyOriginal;
+
+FuncVoid LogiLedShutdownOriginal;
+#pragma endregion //Original Dll Methods
+
+#pragma region Original dll loading & unloading
+void LoadOriginalDll()
+{
+	if (isOriginalDllLoaded) {
+		LOG("Tried to load original dll again, returning true");
+		return;
+	}
+
+	HKEY registryKey;
+	LSTATUS result = RegOpenKeyExW(HKEY_LOCAL_MACHINE, REGISTRY_PATH, 0, KEY_QUERY_VALUE, &registryKey);
+	if (result != ERROR_SUCCESS) {
+		LOG(fmt::format("Failed to open registry key \'{}\'. Error: {}}", utf8_encode(REGISTRY_PATH), result));
+		return;
+	}
+
+	LOG(fmt::format("Opened registry key \'{}\'", utf8_encode(REGISTRY_PATH)));
+	WCHAR buffer[255] = { 0 };
+	DWORD bufferSize = sizeof(buffer);
+	LSTATUS resultB = RegQueryValueExW(registryKey, ARTEMIS_REG_NAME, 0, NULL, (LPBYTE)buffer, &bufferSize);
+	if (resultB != ERROR_SUCCESS) {
+		LOG(fmt::format("Failed to query registry name \'{}\'. Error: {}", utf8_encode(ARTEMIS_REG_NAME), resultB));
+		return;
+	}
+
+	LOG(fmt::format("Queried registry name \'{}\' and got value \'{}\'", utf8_encode(ARTEMIS_REG_NAME), utf8_encode(buffer)));
+	if (GetFileAttributesW(buffer) == INVALID_FILE_ATTRIBUTES) {
+		LOG(fmt::format("Dll file \'{path}\' does not exist. Failed to load original dll.", utf8_encode(buffer)));
+		return;
+	}
+
+	originalDll = LoadLibraryW(buffer);
+	isOriginalDllLoaded = originalDll != NULL;
+	if (!isOriginalDllLoaded) {
+		LOG("Failed to load original dll");
+		return;
+	}
+	LOG("Loaded original dll successfully");
+	LogiLedInitOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedInit");
+	LogiLedInitWithNameOriginal = (FuncBoolName)GetProcAddress(originalDll, "LogiLedInitWithName");
+	LogiLedSetTargetDeviceOriginal = (FuncBoolDeviceType)GetProcAddress(originalDll, "LogiLedSetTargetDevice");
+	LogiLedSaveCurrentLightingOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedSaveCurrentLighting");
+	LogiLedSetLightingOriginal = (FuncBoolColors)GetProcAddress(originalDll, "LogiLedSetLighting");
+	LogiLedRestoreLightingOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedRestoreLighting");
+	LogiLedFlashLightingOriginal = (FuncBoolColorInterval)GetProcAddress(originalDll, "LogiLedFlashLighting");
+	LogiLedPulseLightingOriginal = (FuncBoolColorInterval)GetProcAddress(originalDll, "LogiLedPulseLighting");
+	LogiLedStopEffectsOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedStopEffects");
+	LogiLedSetLightingFromBitmapOriginal = (FuncBoolBitmap)GetProcAddress(originalDll, "LogiLedSetLightingFromBitmap");
+	LogiLedSetLightingForKeyWithScanCodeOriginal = (FuncBoolKeyCodeColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithScanCode");
+	LogiLedSetLightingForKeyWithHidCodeOriginal = (FuncBoolKeyCodeColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithHidCode");
+	LogiLedSetLightingForKeyWithQuartzCodeOriginal = (FuncBoolKeyCodeColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithQuartzCode");
+	LogiLedSetLightingForKeyWithKeyNameOriginal = (FuncBoolKeyNameColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithKeyName");
+	LogiLedSaveLightingForKeyOriginal = (FuncBoolKeyName)GetProcAddress(originalDll, "LogiLedSaveLightingForKey");
+	LogiLedRestoreLightingForKeyOriginal = (FuncBoolKeyName)GetProcAddress(originalDll, "LogiLedRestoreLightingForKey");
+	LogiLedExcludeKeysFromBitmapOriginal = (FuncBoolKeyNames)GetProcAddress(originalDll, "LogiLedExcludeKeysFromBitmap");
+	LogiLedFlashSingleKeyOriginal = (FuncBoolFlashSingleKey)GetProcAddress(originalDll, "LogiLedFlashSingleKey");
+	LogiLedPulseSingleKeyOriginal = (FuncBoolPulseSingleKey)GetProcAddress(originalDll, "LogiLedPulseSingleKey");
+	LogiLedStopEffectsOnKeyOriginal = (FuncBoolKeyName)GetProcAddress(originalDll, "LogiLedStopEffectsOnKey");
+	LogiLedShutdownOriginal = (FuncVoid)GetProcAddress(originalDll, "LogiLedShutdown");
+	LOG("Got original function addresses successfully");
+	return;
 }
 
-inline bool DoesFileExist(const LPCWSTR filename)
-{
-	return GetFileAttributesW(filename) != INVALID_FILE_ATTRIBUTES;
+void FreeOriginalDll() {
+	if (!isOriginalDllLoaded)
+		return;
+
+	LogiLedInitOriginal = NULL;
+	LogiLedInitWithNameOriginal = NULL;
+	LogiLedSetTargetDeviceOriginal = NULL;
+	LogiLedSaveCurrentLightingOriginal = NULL;
+	LogiLedSetLightingOriginal = NULL;
+	LogiLedRestoreLightingOriginal = NULL;
+	LogiLedFlashLightingOriginal = NULL;
+	LogiLedPulseLightingOriginal = NULL;
+	LogiLedStopEffectsOriginal = NULL;
+	LogiLedSetLightingFromBitmapOriginal = NULL;
+	LogiLedSetLightingForKeyWithScanCodeOriginal = NULL;
+	LogiLedSetLightingForKeyWithHidCodeOriginal = NULL;
+	LogiLedSetLightingForKeyWithQuartzCodeOriginal = NULL;
+	LogiLedSetLightingForKeyWithKeyNameOriginal = NULL;
+	LogiLedSaveLightingForKeyOriginal = NULL;
+	LogiLedRestoreLightingForKeyOriginal = NULL;
+	LogiLedExcludeKeysFromBitmapOriginal = NULL;
+	LogiLedFlashSingleKeyOriginal = NULL;
+	LogiLedPulseSingleKeyOriginal = NULL;
+	LogiLedStopEffectsOnKeyOriginal = NULL;
+	LogiLedShutdownOriginal = NULL;
+	FreeLibrary(originalDll);
+	originalDll = NULL;
+	isOriginalDllLoaded = false;
+	LOG("Freed original dll");
 }
-#pragma endregion
+#pragma endregion //Original dll loading & unloading
+#pragma endregion //Dll Management
 
 #pragma region Pipe connection
 void ConnectToPipe() {
@@ -257,100 +343,6 @@ void WriteStringToPipe(std::string data) {
 }
 #pragma endregion
 
-#pragma region Original dll loading & unloading
-void LoadOriginalDll()
-{
-	if (isOriginalDllLoaded) {
-		LOG("Tried to load original dll again, returning true");
-		return;
-	}
-
-	HKEY registryKey;
-	LSTATUS result = RegOpenKeyExW(HKEY_LOCAL_MACHINE, REGISTRY_PATH, 0, KEY_QUERY_VALUE, &registryKey);
-	if (result != ERROR_SUCCESS) {
-		LOG(fmt::format("Failed to open registry key \'{}\'. Error: {}}", utf8_encode(REGISTRY_PATH), result));
-		return;
-	}
-
-	LOG(fmt::format("Opened registry key \'{}\'", utf8_encode(REGISTRY_PATH)));
-	WCHAR buffer[255] = { 0 };
-	DWORD bufferSize = sizeof(buffer);
-	LSTATUS resultB = RegQueryValueExW(registryKey, ARTEMIS_REG_NAME, 0, NULL, (LPBYTE)buffer, &bufferSize);
-	if (resultB != ERROR_SUCCESS) {
-		LOG(fmt::format("Failed to query registry name \'{}\'. Error: {}", utf8_encode(ARTEMIS_REG_NAME), resultB));
-		return;
-	}
-
-	LOG(fmt::format("Queried registry name \'{}\' and got value \'{}\'", utf8_encode(ARTEMIS_REG_NAME), utf8_encode(buffer)));
-	if (!DoesFileExist(buffer)) {
-		LOG(fmt::format("Dll file \'{path}\' does not exist. Failed to load original dll.", utf8_encode(buffer)));
-		return;
-	}
-
-	originalDll = LoadLibraryW(buffer);
-	isOriginalDllLoaded = originalDll != NULL;
-	if (!isOriginalDllLoaded) {
-		LOG("Failed to load original dll");
-		return;
-	}
-	LOG("Loaded original dll successfully");
-	LogiLedInitOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedInit");
-	LogiLedInitWithNameOriginal = (FuncBoolName)GetProcAddress(originalDll, "LogiLedInitWithName");
-	LogiLedSetTargetDeviceOriginal = (FuncBoolDeviceType)GetProcAddress(originalDll, "LogiLedSetTargetDevice");
-	LogiLedSaveCurrentLightingOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedSaveCurrentLighting");
-	LogiLedSetLightingOriginal = (FuncBoolColors)GetProcAddress(originalDll, "LogiLedSetLighting");
-	LogiLedRestoreLightingOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedRestoreLighting");
-	LogiLedFlashLightingOriginal = (FuncBoolColorInterval)GetProcAddress(originalDll, "LogiLedFlashLighting");
-	LogiLedPulseLightingOriginal = (FuncBoolColorInterval)GetProcAddress(originalDll, "LogiLedPulseLighting");
-	LogiLedStopEffectsOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedStopEffects");
-	LogiLedSetLightingFromBitmapOriginal = (FuncBoolBitmap)GetProcAddress(originalDll, "LogiLedSetLightingFromBitmap");
-	LogiLedSetLightingForKeyWithScanCodeOriginal = (FuncBoolKeyCodeColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithScanCode");
-	LogiLedSetLightingForKeyWithHidCodeOriginal = (FuncBoolKeyCodeColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithHidCode");
-	LogiLedSetLightingForKeyWithQuartzCodeOriginal = (FuncBoolKeyCodeColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithQuartzCode");
-	LogiLedSetLightingForKeyWithKeyNameOriginal = (FuncBoolKeyNameColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithKeyName");
-	LogiLedSaveLightingForKeyOriginal = (FuncBoolKeyName)GetProcAddress(originalDll, "LogiLedSaveLightingForKey");
-	LogiLedRestoreLightingForKeyOriginal = (FuncBoolKeyName)GetProcAddress(originalDll, "LogiLedRestoreLightingForKey");
-	LogiLedExcludeKeysFromBitmapOriginal = (FuncBoolKeyNames)GetProcAddress(originalDll, "LogiLedExcludeKeysFromBitmap");
-	LogiLedFlashSingleKeyOriginal = (FuncBoolFlashSingleKey)GetProcAddress(originalDll, "LogiLedFlashSingleKey");
-	LogiLedPulseSingleKeyOriginal = (FuncBoolPulseSingleKey)GetProcAddress(originalDll, "LogiLedPulseSingleKey");
-	LogiLedStopEffectsOnKeyOriginal = (FuncBoolKeyName)GetProcAddress(originalDll, "LogiLedStopEffectsOnKey");
-	LogiLedShutdownOriginal = (FuncVoid)GetProcAddress(originalDll, "LogiLedShutdown");
-	LOG("Got original function addresses successfully");
-	return;
-}
-
-void FreeOriginalDll() {
-	if (!isOriginalDllLoaded)
-		return;
-
-	LogiLedInitOriginal = NULL;
-	LogiLedInitWithNameOriginal = NULL;
-	LogiLedSetTargetDeviceOriginal = NULL;
-	LogiLedSaveCurrentLightingOriginal = NULL;
-	LogiLedSetLightingOriginal = NULL;
-	LogiLedRestoreLightingOriginal = NULL;
-	LogiLedFlashLightingOriginal = NULL;
-	LogiLedPulseLightingOriginal = NULL;
-	LogiLedStopEffectsOriginal = NULL;
-	LogiLedSetLightingFromBitmapOriginal = NULL;
-	LogiLedSetLightingForKeyWithScanCodeOriginal = NULL;
-	LogiLedSetLightingForKeyWithHidCodeOriginal = NULL;
-	LogiLedSetLightingForKeyWithQuartzCodeOriginal = NULL;
-	LogiLedSetLightingForKeyWithKeyNameOriginal = NULL;
-	LogiLedSaveLightingForKeyOriginal = NULL;
-	LogiLedRestoreLightingForKeyOriginal = NULL;
-	LogiLedExcludeKeysFromBitmapOriginal = NULL;
-	LogiLedFlashSingleKeyOriginal = NULL;
-	LogiLedPulseSingleKeyOriginal = NULL;
-	LogiLedStopEffectsOnKeyOriginal = NULL;
-	LogiLedShutdownOriginal = NULL;
-	FreeLibrary(originalDll);
-	originalDll = NULL;
-	isOriginalDllLoaded = false;
-	LOG("Freed original dll");
-}
-#pragma endregion
-
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call)
@@ -381,7 +373,7 @@ bool LogiLedInit()
 	}
 
 	LOG("LogiLedInit Called");
-	if (!IsProgramNameBlacklisted(program_name)) {
+	if (program_name != ARTEMIS_EXE_NAME) {
 		LOG("Trying to connect to pipe...");
 		ConnectToPipe();
 
