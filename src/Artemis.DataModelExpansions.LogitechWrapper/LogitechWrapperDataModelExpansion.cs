@@ -49,7 +49,6 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
 
         public async void ProcessClientThread(NamedPipeServerStream pipeStream)
         {
-            using var sr = new BinaryReader(pipeStream, Encoding.UTF8);
             while (!_cancellationTokenSource.IsCancellationRequested && pipeStream.IsConnected)
             {
                 //packet structure:
@@ -63,13 +62,17 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
                     //log?
                     break;
                 }
-                var packet = new byte[BitConverter.ToUInt32(lengthBuffer) - sizeof(uint)];
+                var packetLength = BitConverter.ToUInt32(lengthBuffer);
+
+                var packet = new byte[packetLength - sizeof(uint)];
                 if (await pipeStream.ReadAsync(packet.AsMemory(), _cancellationTokenSource.Token) < packet.Length)
                 {
                     //log?
                     break;
                 }
-                Task.Run(() => ProcessMessage(BitConverter.ToUInt32(packet, 0), packet.AsSpan(sizeof(uint))));
+
+                var commandId = (LogitechCommand)BitConverter.ToUInt32(packet, 0);
+                _ = Task.Run(() => ProcessMessage(commandId, packet.AsSpan(sizeof(uint))));
             }
             _logger.Information("Pipe stream disconnected, stopping thread...");
 
@@ -77,15 +80,15 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
             pipeStream.Dispose();
         }
 
-        private void ProcessMessage(uint commandId, ReadOnlySpan<byte> span)
+        private void ProcessMessage(LogitechCommand commandId, ReadOnlySpan<byte> span)
         {
             switch (commandId)
             {
-                case 0:
+                case LogitechCommand.LogLine:
                     var s = Encoding.UTF8.GetString(span);
                     _logger.Information(s);
                     break;
-                case 1:
+                case LogitechCommand.SetLighting:
                     DataModel.SetLighting = new SKColor(span[0], span[1], span[2]);
                     break;
                 default:
@@ -118,6 +121,43 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
             {
                 _logger.Error("Error processing client", e);
             }
+        }
+
+        private enum LogitechCommand
+        {
+            LogLine = 0,
+            Init,
+            InitWithName,
+            GetSdkVersion,
+            GetConfigOptionNumber,
+            GetConfigOptionBool,
+            GetConfigOptionColor,
+            GetConfigOptionRect,
+            GetConfigOptionString,
+            GetConfigOptionKeyInput,
+            GetConfigOptionSelect,
+            GetConfigOptionRange,
+            SetConfigOptionLabel,
+            SetTargetDevice,
+            SaveCurrentLighting,
+            SetLighting,
+            RestoreLighting,
+            FlashLighting,
+            PulseLighting,
+            StopEffects,
+            SetLightingFromBitmap,
+            SetLightingForKeyWithScanCode,
+            SetLightingForKeyWithHidCode,
+            SetLightingForKeyWithQuartzCode,
+            SetLightingForKeyWithKeyName,
+            SaveLightingForKey,
+            RestoreLightingForKey,
+            ExcludeKeysFromBitmap,
+            FlashSingleKey,
+            PulseSingleKey,
+            StopEffectsOnKey,
+            SetLightingForTargetZone,
+            Shutdown,
         }
     }
 }

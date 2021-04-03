@@ -3,7 +3,6 @@
 #include "pch.h"
 #include "LogitechLEDLib.h"
 #include <string>
-#include <fstream>
 
 #define PIPE_NAME L"\\\\.\\pipe\\Artemis\\Logitech"
 #define ARTEMIS_REG_NAME L"Artemis"
@@ -17,6 +16,7 @@
 #endif
 
 #ifdef _DEBUG
+#include <fstream>
 #include "fmt/format.h"
 #include "fmt/chrono.h"
 void log_to_file(std::string data) {
@@ -26,7 +26,7 @@ void log_to_file(std::string data) {
 	std::time_t t = std::time(nullptr);
 	struct tm newTime;
 	localtime_s(&newTime, &t);
-	auto timeHeader = fmt::format("[{:%Y-%m-%d %H:%M:%S}] ", newTime);
+	std::string timeHeader = fmt::format("[{:%Y-%m-%d %H:%M:%S}] ", newTime);
 
 	logFile << timeHeader << data << '\n';
 	logFile.close();
@@ -35,6 +35,42 @@ void log_to_file(std::string data) {
 #else
 #define LOG(x) ((void)0)
 #endif 
+
+enum LogiCommands : unsigned int {
+	LogLine = 0,
+	Init,
+	InitWithName,
+	GetSdkVersion,
+	GetConfigOptionNumber,
+	GetConfigOptionBool,
+	GetConfigOptionColor,
+	GetConfigOptionRect,
+	GetConfigOptionString,
+	GetConfigOptionKeyInput,
+	GetConfigOptionSelect,
+	GetConfigOptionRange,
+	SetConfigOptionLabel,
+	SetTargetDevice,
+	SaveCurrentLighting,
+	SetLighting,
+	RestoreLighting,
+	FlashLighting,
+	PulseLighting,
+	StopEffects,
+	SetLightingFromBitmap,
+	SetLightingForKeyWithScanCode,
+	SetLightingForKeyWithHidCode,
+	SetLightingForKeyWithQuartzCode,
+	SetLightingForKeyWithKeyName,
+	SaveLightingForKey,
+	RestoreLightingForKey,
+	ExcludeKeysFromBitmap,
+	FlashSingleKey,
+	PulseSingleKey,
+	StopEffectsOnKey,
+	SetLightingForTargetZone,
+	Shutdown,
+};
 
 #pragma region FuncPointer typedefs
 typedef void (*FuncVoid)();
@@ -82,7 +118,7 @@ FuncVoid LogiLedShutdownOriginal;
 
 #pragma region Static variables
 static bool isInitialized = false;
-static bool isPipeConnected = false; 
+static bool isPipeConnected = false;
 static bool isOriginalDllLoaded = false;
 static HANDLE artemisPipe = NULL;
 static HMODULE originalDll = NULL;
@@ -192,13 +228,13 @@ void WriteToPipe(LPCVOID data, DWORD dataLength) {
 }
 
 void WriteStringToPipe(std::string data) {
-	LOG(fmt::format("Writing to pipe: \'{}\'" , data));
-	//data.push_back('\n');
+	LOG(fmt::format("Writing to pipe: \'{}\'", data));
+
 	const char* cData = data.c_str();
 	unsigned int cDataLength = strlen(cData) + 1;
 
-	unsigned int logCommand = 0;
-	unsigned int arraySize = 
+	unsigned int logCommand = LogiCommands::LogLine;
+	unsigned int arraySize =
 		sizeof(unsigned int) + //length
 		sizeof(unsigned int) + //command
 		cDataLength;
@@ -414,7 +450,7 @@ bool LogiLedSaveCurrentLighting()
 bool LogiLedSetLighting(int redPercentage, int greenPercentage, int bluePercentage)
 {
 	if (isPipeConnected) {
-		const unsigned int setLightingCommand = 1;
+		const unsigned int setLightingCommand = LogiCommands::SetLighting;
 		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
 			sizeof(unsigned int) + //command
@@ -616,7 +652,7 @@ void LogiLedShutdown()
 {
 	if (!isInitialized)
 		return;
-	
+
 	LOG("LogiLedShutdown called");
 
 	if (isPipeConnected) {
@@ -631,7 +667,7 @@ void LogiLedShutdown()
 		FreeOriginalDll();
 	}
 
-	if(!isPipeConnected && !isOriginalDllLoaded)
+	if (!isPipeConnected && !isOriginalDllLoaded)
 		LOG("Exiting without doing anything. Fix?");
 
 	isInitialized = false;
