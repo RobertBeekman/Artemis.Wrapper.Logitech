@@ -8,7 +8,6 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.DataModels
     {
         public SKColor SetLighting { get; set; }
 
-        public KeysDataModel Keys { get; set; } = new KeysDataModel();
         public KeysDataModel Bitmap { get; set; } = new KeysDataModel();
     }
 

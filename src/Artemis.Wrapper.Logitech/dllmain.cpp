@@ -375,7 +375,30 @@ bool LogiLedInit()
 		ConnectToPipe();
 
 		if (isPipeConnected) {
-			WriteStringToPipe("LogiLedInit: " + program_name);
+			auto c_str = program_name.c_str();
+			unsigned int strLength = strlen(c_str) + 1;
+			const unsigned int command = LogiCommands::Init;
+			const unsigned int arraySize =
+				sizeof(unsigned int) +  //length
+				sizeof(unsigned int) +  //command
+				strLength;              //str
+
+			unsigned char* buff = new unsigned char [arraySize] { 0 };
+			unsigned int buffPtr = 0;
+
+			memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+			buffPtr += sizeof(arraySize);
+
+			memcpy(&buff[buffPtr], &command, sizeof(command));
+			buffPtr += sizeof(command);
+
+			memcpy(&buff[buffPtr], c_str, strLength);
+			buffPtr += strLength;
+
+			WriteToPipe(buff, arraySize);
+
+			delete[] buff;
+
 			isInitialized = true;
 			return true;
 		}
@@ -399,7 +422,30 @@ bool LogiLedInit()
 bool LogiLedInitWithName(const char name[])
 {
 	if (isPipeConnected) {
-		WriteStringToPipe("LogiLedInitWithName: " + std::string(name));
+		const char* c_str = name;
+		unsigned int strLength = strlen(c_str) + 1;
+		const unsigned int command = LogiCommands::Init;
+		const unsigned int arraySize =
+			sizeof(unsigned int) +  //length
+			sizeof(unsigned int) +  //command
+			strLength;              //str
+
+		unsigned char* buff = new unsigned char [arraySize] { 0 };
+		unsigned int buffPtr = 0;
+
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
+
+		memcpy(&buff[buffPtr], &command, sizeof(command));
+		buffPtr += sizeof(command);
+
+		memcpy(&buff[buffPtr], c_str, strLength);
+		buffPtr += strLength;
+
+		WriteToPipe(buff, arraySize);
+
+		delete[] buff;
+
 		return true;
 	}
 
@@ -1010,20 +1056,29 @@ void LogiLedShutdown()
 	if (isPipeConnected) {
 		LOG("Informing artemis and closing pipe...");
 
+		const char* c_str = program_name.c_str();
+		unsigned int strLength = strlen(c_str) + 1;
 		const unsigned int command = LogiCommands::Shutdown;
-		const unsigned int length =
-			sizeof(unsigned int) + //length
-			sizeof(unsigned int);  //command
-		unsigned char buff[length] = { 0 };
+		const unsigned int arraySize =
+			sizeof(unsigned int) +  //length
+			sizeof(unsigned int) +  //command
+			strLength;              //str
+
+		unsigned char* buff = new unsigned char [arraySize] { 0 };
 		unsigned int buffPtr = 0;
 
-		memcpy(&buff[buffPtr], &length, sizeof(length));
-		buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		WriteToPipe(buff, length);
+		memcpy(&buff[buffPtr], c_str, strLength);
+		buffPtr += strLength;
+
+		WriteToPipe(buff, arraySize);
+
+		delete[] buff;
 
 		ClosePipe();
 	}
