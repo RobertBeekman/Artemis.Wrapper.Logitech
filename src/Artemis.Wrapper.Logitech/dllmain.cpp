@@ -371,7 +371,6 @@ bool LogiLedInit()
 
 	LOG("LogiLedInit Called");
 	if (program_name != ARTEMIS_EXE_NAME) {
-		LOG("Trying to connect to pipe...");
 		ConnectToPipe();
 
 		if (isPipeConnected) {
@@ -682,26 +681,29 @@ bool LogiLedStopEffects()
 
 bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 {
-	const unsigned int command = LogiCommands::SetLightingFromBitmap;
-	const unsigned int length =
-		sizeof(unsigned int) + //length
-		sizeof(unsigned int) + //command
-		LOGI_LED_BITMAP_SIZE;
+	if (isPipeConnected) {
+		const unsigned int command = LogiCommands::SetLightingFromBitmap;
+		const unsigned int length =
+			sizeof(unsigned int) + //length
+			sizeof(unsigned int) + //command
+			LOGI_LED_BITMAP_SIZE;
 
-	unsigned char buff[length] = { 0 };
-	unsigned int buffPtr = 0;
+		unsigned char buff[length] = { 0 };
+		unsigned int buffPtr = 0;
 
-	memcpy(&buff[buffPtr], &length, sizeof(length));
-	buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &length, sizeof(length));
+		buffPtr += sizeof(length);
 
-	memcpy(&buff[buffPtr], &command, sizeof(command));
-	buffPtr += sizeof(command);
+		memcpy(&buff[buffPtr], &command, sizeof(command));
+		buffPtr += sizeof(command);
 
-	memcpy(&buff[buffPtr], &bitmap[0], sizeof(LOGI_LED_BITMAP_SIZE));
-	buffPtr += sizeof(LOGI_LED_BITMAP_SIZE);
+		memcpy(&buff[buffPtr], &bitmap[0], sizeof(LOGI_LED_BITMAP_SIZE));
+		buffPtr += sizeof(LOGI_LED_BITMAP_SIZE);
 
-	WriteToPipe(buff, length);
-	return true;
+		WriteToPipe(buff, length);
+		return true;
+	}
+
 	if (isOriginalDllLoaded) {
 		return LogiLedSetLightingFromBitmapOriginal(bitmap);
 	}
