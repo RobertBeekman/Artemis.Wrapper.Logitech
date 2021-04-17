@@ -3,8 +3,8 @@ using Serilog;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Pipes;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +16,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
         private readonly ILogger _logger;
         private readonly CancellationTokenSource _serverLoopCancellationTokenSource;
         private readonly Task _serverLoop;
-        private readonly List<(Task, CancellationTokenSource)> _listeners;
+        private readonly List<LogitechWrapperReader> _readers;
 
         private const string PIPE_NAME = "Artemis\\Logitech";
         private const int LOGI_LED_BITMAP_WIDTH = 21;
@@ -28,11 +28,12 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
         public LogiDeviceType DeviceType { get; private set; }
 
         public event EventHandler BitmapChanged;
+        public event EventHandler ClientConnected;
 
         public LogitechWrapperListenerService(ILogger logger)
         {
             _logger = logger;
-            _listeners = new List<(Task, CancellationTokenSource)>();
+            _readers = new List<LogitechWrapperReader>();
             _serverLoopCancellationTokenSource = new CancellationTokenSource();
             _serverLoop = Task.Factory.StartNew(async () => await ServerLoop().ConfigureAwait(false), TaskCreationOptions.LongRunning);
         }
@@ -52,16 +53,15 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
                         PipeOptions.Asynchronous);
                     _logger.Information("Started new pipe stream, waiting for client");
 
-                    var cancellationTokenSource = new CancellationTokenSource();
-                    await pipeStream.WaitForConnectionAsync(cancellationTokenSource.Token).ConfigureAwait(false);
+                    await pipeStream.WaitForConnectionAsync(_serverLoopCancellationTokenSource.Token).ConfigureAwait(false);
 
-                    _logger.Information("Client Connected, starting dedicated read thread...");
+                    _logger.Information("Client Connected, starting dedicated reader...");
 
-                    var task = Task.Factory.StartNew(
-                        async () => await ProcessClientThread(pipeStream, cancellationTokenSource.Token).ConfigureAwait(false),
-                        TaskCreationOptions.LongRunning);
+                    var reader = new LogitechWrapperReader(_logger, pipeStream, new CancellationTokenSource());
+                    reader.CommandReceived += OnCommandReceived;
+                    _readers.Add(reader);
 
-                    _listeners.Add((task, cancellationTokenSource));
+                    ClientConnected?.Invoke(this, EventArgs.Empty);
                 }
                 catch (Exception e)
                 {
@@ -70,44 +70,10 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
             }
         }
 
-        private async Task ProcessClientThread(NamedPipeServerStream pipeStream, CancellationToken cancellationToken)
+        private void OnCommandReceived(object sender, WrapperPacket e)
         {
-            while (!cancellationToken.IsCancellationRequested && pipeStream.IsConnected)
-            {
-                //packet structure:
-                //4 bytes = packet length
-                //4 bytes = command id
-                //(total - 8) bytes = whatever other data is left
-
-                var lengthBuffer = new byte[4];
-                if (await pipeStream.ReadAsync(lengthBuffer.AsMemory(), cancellationToken) < 4)
-                {
-                    //log?
-                    break;
-                }
-                var packetLength = BitConverter.ToUInt32(lengthBuffer);
-
-                var packet = new byte[packetLength - sizeof(uint)];
-                if (await pipeStream.ReadAsync(packet.AsMemory(), cancellationToken) < packet.Length)
-                {
-                    //log?
-                    break;
-                }
-
-                var commandId = (LogitechCommand)BitConverter.ToUInt32(packet, 0);
-                //run this in another thread to not block the pipe
-                //_ = Task.Run(() => ProcessMessage(commandId, packet.AsSpan(sizeof(uint))));
-                ProcessMessage(commandId, packet.AsSpan(sizeof(uint)));
-            }
-            _logger.Information("Pipe stream disconnected, stopping thread...");
-
-            pipeStream.Close();
-            pipeStream.Dispose();
-        }
-
-        private void ProcessMessage(LogitechCommand commandId, ReadOnlySpan<byte> span)
-        {
-            switch (commandId)
+            ReadOnlySpan<byte> span = e.Packet.Span;
+            switch (e.Command)
             {
                 case LogitechCommand.Init:
                     _logger.Information("LogiLedInit: {name}", Encoding.UTF8.GetString(span));
@@ -116,7 +82,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
                     _logger.Information("LogiLedShutdown: {name}", Encoding.UTF8.GetString(span));
                     break;
                 case LogitechCommand.LogLine:
-                    _logger.Information(Encoding.UTF8.GetString(span));
+                    _logger.Information("LogLine: {data}", Encoding.UTF8.GetString(span));
                     break;
                 case LogitechCommand.SetTargetDevice:
                     DeviceType = (LogiDeviceType)BitConverter.ToInt32(span);
@@ -149,7 +115,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
                         _logger.Error("Scancode not defined: {scanCode}", scanCode);
                     }
 
-                    if (LedMapping.ScanCoded.TryGetValue(scanCode,  out var idx2))
+                    if (LedMapping.ScanCoded.TryGetValue(scanCode, out var idx2))
                     {
                         lock (bitmapLock)
                         {
@@ -181,7 +147,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
                     //ignore?
                     break;
                 default:
-                    _logger.Information("Unknown command id: {commandId}. Array: {span}", commandId, span.ToArray());
+                    _logger.Information("Unknown command id: {commandId}.", e.Command);
                     break;
             }
         }
@@ -192,14 +158,73 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
             _serverLoop.Wait();
             _serverLoopCancellationTokenSource.Dispose();
 
-            foreach (var (task, token) in _listeners)
+            for (int i = _readers.Count - 1; i >= 0; i--)
             {
-                token.Cancel();
-                task.Wait();
-                token.Dispose();
+                _readers[i].CommandReceived -= OnCommandReceived;
+                _readers[i].Dispose();
+                _readers.RemoveAt(i);
             }
 
-            _listeners.Clear();
+            _readers.Clear();
+        }
+    }
+
+    internal class LogitechWrapperReader : IDisposable
+    {
+        private readonly ILogger _logger;
+        private readonly NamedPipeServerStream _pipe;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly Task _listenerTask;
+
+        public event EventHandler<WrapperPacket> CommandReceived;
+
+        public LogitechWrapperReader(ILogger logger, NamedPipeServerStream pipe, CancellationTokenSource cancellationTokenSource)
+        {
+            _logger = logger;
+            _pipe = pipe;
+            _cancellationTokenSource = cancellationTokenSource;
+            _listenerTask = Task.Factory.StartNew(async () => await ReadLoop().ConfigureAwait(false), TaskCreationOptions.LongRunning);
+        }
+
+        public async Task<WrapperPacket> ReadWrapperPacket()
+        {
+            byte[] lengthBuffer = new byte[4];
+
+            if (await _pipe.ReadAsync(lengthBuffer, _cancellationTokenSource.Token) != 4)
+                throw new IOException();
+
+            uint packetLength = BitConverter.ToUInt32(lengthBuffer, 0);
+
+            byte[] packet = new byte[packetLength - sizeof(uint)];
+
+            if (await _pipe.ReadAsync(packet, _cancellationTokenSource.Token) != packetLength - sizeof(uint))
+                throw new IOException();
+
+            var commandId = (LogitechCommand)BitConverter.ToUInt32(packet, 0);
+
+            return new WrapperPacket(commandId, packet.AsMemory(4));
+        }
+
+        private async Task ReadLoop()
+        {
+            //read and fill in Program Name.
+            while (!_cancellationTokenSource.IsCancellationRequested && _pipe.IsConnected)
+            {
+                var packet = await ReadWrapperPacket();
+
+                CommandReceived?.Invoke(this, packet);
+            }
+            _logger.Information("Pipe stream disconnected, stopping thread...");
+            _pipe.Close();
+            await _pipe.DisposeAsync();
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource.Cancel();
+            _listenerTask.Wait();
+            _listenerTask.Dispose();
+            _cancellationTokenSource.Dispose();
         }
     }
 }
