@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Artemis.DataModelExpansions.LogitechWrapper.Services
 {
-    internal enum ScanCode
+    internal enum HidCode
     {
         KEY_A = 0x04,  // Keyboard a and A
         KEY_B = 0x05,  // Keyboard b and B

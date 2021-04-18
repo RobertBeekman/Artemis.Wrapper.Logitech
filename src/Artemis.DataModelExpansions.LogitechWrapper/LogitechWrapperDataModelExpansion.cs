@@ -33,12 +33,13 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
 
         private void WrapperServiceOnBitmapChanged(object sender, EventArgs e)
         {
-            for (int i = 0; i < _wrapperService.Bitmap.Length; i++)
+            foreach (var item in _wrapperService.Colors)
             {
-                var bm = DataModel.Bitmap.DynamicChild<KeyDataModel>(i.ToString()) ??
-                    DataModel.Bitmap.AddDynamicChild(new KeyDataModel(), i.ToString());
+                //TODO: do not abuse ToString
+                var bm = DataModel.DynamicChild<KeyDataModel>(item.Key.ToString()) ??
+                    DataModel.AddDynamicChild(new KeyDataModel(), item.Key.ToString());
 
-                bm.Color = _wrapperService.Bitmap[i];
+                bm.Color = item.Value;
             }
         }
     }

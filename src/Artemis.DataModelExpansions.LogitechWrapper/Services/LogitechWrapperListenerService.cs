@@ -1,10 +1,13 @@
 ﻿using Artemis.Core.Services;
+using RGB.NET.Core;
 using Serilog;
 using SkiaSharp;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,9 +26,9 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
         private const int LOGI_LED_BITMAP_HEIGHT = 6;
         private const int LOGI_LED_BITMAP_SIZE = (LOGI_LED_BITMAP_WIDTH * LOGI_LED_BITMAP_HEIGHT);
 
-        private readonly object bitmapLock = new();
-        public SKColor[] Bitmap { get; } = new SKColor[LOGI_LED_BITMAP_SIZE];
         public LogiDeviceType DeviceType { get; private set; }
+
+        public ConcurrentDictionary<LedId, SKColor> Colors = new();
 
         public event EventHandler BitmapChanged;
         public event EventHandler ClientConnected;
@@ -88,54 +91,61 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
                     DeviceType = (LogiDeviceType)BitConverter.ToInt32(span);
                     break;
                 case LogitechCommand.SetLighting:
-                    lock (bitmapLock)
+                    var color = new SKColor(span[0], span[1], span[2]);
+                    foreach (var key in Colors.Keys)
                     {
-                        Array.Fill(Bitmap, new SKColor(span[0], span[1], span[2]));
+                        Colors[key] = color;
                     }
+                    _logger.Verbose("SetLighting: {color}", color);
                     BitmapChanged?.Invoke(this, EventArgs.Empty);
                     break;
                 case LogitechCommand.SetLightingForKeyWithKeyName:
-                    var keyName = (LogitechLedId)BitConverter.ToInt32(span[3..]);
-                    if (LedMapping.BitmapMap.TryGetValue(keyName, out var idx))
+                    var color2 = new SKColor(span[0], span[1], span[2]);
+                    var keyNameIdx = BitConverter.ToInt32(span[3..]);
+                    var keyName = (LogitechLedId)keyNameIdx;
+
+                    if (LedMapping.LogitechLedIds.TryGetValue(keyName, out var idx))
                     {
-                        lock (bitmapLock)
-                        {
-                            Bitmap[idx / 4] = new SKColor(span[0], span[1], span[2]);
-                        }
+                        Colors[idx] = color2;
                     }
 
+                    _logger.Verbose("SetLightingForKeyWithKeyName: {keyName} ({keyNameIdx}) - {color}", keyName, keyNameIdx, color2);
                     BitmapChanged?.Invoke(this, EventArgs.Empty);
-
                     break;
                 case LogitechCommand.SetLightingForKeyWithScanCode:
-                    var scanCode = (ScanCode)BitConverter.ToInt32(span[3..]);
+                    var color3 = new SKColor(span[0], span[1], span[2]);
+                    var scanCodeIdx = BitConverter.ToInt32(span[3..]);
+                    var scanCode = (DirectInputScanCode)scanCodeIdx;
 
-                    if (!Enum.IsDefined(scanCode))
+                    if (LedMapping.DirectInputScanCodes.TryGetValue(scanCode, out var idx2))
                     {
-                        _logger.Error("Scancode not defined: {scanCode}", scanCode);
+                        Colors[idx2] = color3;
                     }
 
-                    if (LedMapping.ScanCoded.TryGetValue(scanCode, out var idx2))
-                    {
-                        lock (bitmapLock)
-                        {
-                            Bitmap[idx2 / 4] = new SKColor(span[0], span[1], span[2]);
-                        }
-                    }
-
+                    _logger.Verbose("SetLightingForKeyWithScanCode: {scanCode} ({scanCodeIdx}) - {color}", scanCode, scanCodeIdx, color3);
                     BitmapChanged?.Invoke(this, EventArgs.Empty);
+                    break;
+                case LogitechCommand.SetLightingForKeyWithHidCode:
+                    var color4 = new SKColor(span[0], span[1], span[2]);
+                    var hidCodeIdx = BitConverter.ToInt32(span[3..]);
+                    var hidCode = (HidCode)hidCodeIdx;
 
+                    if (LedMapping.HidCodes.TryGetValue(hidCode, out var idx3))
+                    {
+                        Colors[idx3] = color4;
+                    }
+
+                    _logger.Verbose("SetLightingForKeyWithHidCode: {hidCode} ({hidCodeIdx}) - {color}", hidCode, hidCodeIdx, color4);
+                    BitmapChanged?.Invoke(this, EventArgs.Empty);
                     break;
                 case LogitechCommand.SetLightingFromBitmap:
-                    int j = 0;
-                    lock (bitmapLock)
+                    for (int i = 0; i < LOGI_LED_BITMAP_SIZE; i += 4)
                     {
-                        for (int i = 0; i < LOGI_LED_BITMAP_SIZE; i += 4)
+                        var colorBuff = span.Slice(i, 4);
+                        if (LedMapping.BitmapMap.TryGetValue(i, out var l))
                         {
-                            var color = span.Slice(i, 4);
-
                             //BGRA
-                            Bitmap[j++] = new SKColor(color[2], color[1], color[0], color[3]);
+                            Colors[l] = new SKColor(colorBuff[2], colorBuff[1], colorBuff[0], colorBuff[3]);
                         }
                     }
                     BitmapChanged?.Invoke(this, EventArgs.Empty);
@@ -166,65 +176,6 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
             }
 
             _readers.Clear();
-        }
-    }
-
-    internal class LogitechWrapperReader : IDisposable
-    {
-        private readonly ILogger _logger;
-        private readonly NamedPipeServerStream _pipe;
-        private readonly CancellationTokenSource _cancellationTokenSource;
-        private readonly Task _listenerTask;
-
-        public event EventHandler<WrapperPacket> CommandReceived;
-
-        public LogitechWrapperReader(ILogger logger, NamedPipeServerStream pipe, CancellationTokenSource cancellationTokenSource)
-        {
-            _logger = logger;
-            _pipe = pipe;
-            _cancellationTokenSource = cancellationTokenSource;
-            _listenerTask = Task.Factory.StartNew(async () => await ReadLoop().ConfigureAwait(false), TaskCreationOptions.LongRunning);
-        }
-
-        public async Task<WrapperPacket> ReadWrapperPacket()
-        {
-            byte[] lengthBuffer = new byte[4];
-
-            if (await _pipe.ReadAsync(lengthBuffer, _cancellationTokenSource.Token) != 4)
-                throw new IOException();
-
-            uint packetLength = BitConverter.ToUInt32(lengthBuffer, 0);
-
-            byte[] packet = new byte[packetLength - sizeof(uint)];
-
-            if (await _pipe.ReadAsync(packet, _cancellationTokenSource.Token) != packetLength - sizeof(uint))
-                throw new IOException();
-
-            var commandId = (LogitechCommand)BitConverter.ToUInt32(packet, 0);
-
-            return new WrapperPacket(commandId, packet.AsMemory(4));
-        }
-
-        private async Task ReadLoop()
-        {
-            //read and fill in Program Name.
-            while (!_cancellationTokenSource.IsCancellationRequested && _pipe.IsConnected)
-            {
-                var packet = await ReadWrapperPacket();
-
-                CommandReceived?.Invoke(this, packet);
-            }
-            _logger.Information("Pipe stream disconnected, stopping thread...");
-            _pipe.Close();
-            await _pipe.DisposeAsync();
-        }
-
-        public void Dispose()
-        {
-            _cancellationTokenSource.Cancel();
-            _listenerTask.Wait();
-            _listenerTask.Dispose();
-            _cancellationTokenSource.Dispose();
         }
     }
 }
