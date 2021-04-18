@@ -92,7 +92,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
                     break;
                 case LogitechCommand.SetLighting:
                     var color = new SKColor(span[0], span[1], span[2]);
-                    foreach (var key in Colors.Keys)
+                    foreach (var key in LedMapping.BitmapMap.Values)
                     {
                         Colors[key] = color;
                     }
