@@ -3,6 +3,7 @@ using Artemis.DataModelExpansions.LogitechWrapper.DataModels;
 using Artemis.DataModelExpansions.LogitechWrapper.Services;
 using Serilog;
 using System;
+using SkiaSharp;
 
 namespace Artemis.DataModelExpansions.LogitechWrapper
 {
@@ -35,11 +36,10 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
         {
             foreach (var item in _wrapperService.Colors)
             {
-                //TODO: do not abuse ToString
-                var bm = DataModel.DynamicChild<KeyDataModel>(item.Key.ToString()) ??
-                    DataModel.AddDynamicChild(new KeyDataModel(), item.Key.ToString());
+                var dc = DataModel.GetDynamicChild<SKColor>(item.Key.ToString()) ??
+                    DataModel.AddDynamicChild(item.Key.ToString(), new SKColor());
 
-                bm.Color = item.Value;
+                dc.Value = item.Value;
             }
         }
     }
