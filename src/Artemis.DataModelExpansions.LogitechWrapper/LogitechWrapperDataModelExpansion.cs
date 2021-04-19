@@ -36,8 +36,10 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
         {
             foreach (var item in _wrapperService.Colors)
             {
-                var dc = DataModel.GetDynamicChild<SKColor>(item.Key.ToString()) ??
-                    DataModel.AddDynamicChild(item.Key.ToString(), new SKColor());
+                if (!DataModel.TryGetDynamicChild<SKColor>(item.Key.ToString(), out var dc))
+                {
+                    dc = DataModel.AddDynamicChild<SKColor>(item.Key.ToString(), default);
+                }
 
                 dc.Value = item.Value;
             }
