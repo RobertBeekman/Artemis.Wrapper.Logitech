@@ -3,6 +3,7 @@
 #include "pch.h"
 #include "LogitechLEDLib.h"
 #include <string>
+#include <vector>
 
 #define PIPE_NAME L"\\\\.\\pipe\\Artemis\\Logitech"
 #define ARTEMIS_REG_NAME L"Artemis"
@@ -314,7 +315,7 @@ void WriteStringToPipe(std::string data) {
 	LOG(fmt::format("Writing to pipe: \'{}\'", data));
 
 	const char* cData = data.c_str();
-	unsigned int cDataLength = strlen(cData) + 1;
+	unsigned int cDataLength = (int)strlen(cData) + 1;
 
 	unsigned int logCommand = LogiCommands::LogLine;
 	unsigned int arraySize =
@@ -322,7 +323,7 @@ void WriteStringToPipe(std::string data) {
 		sizeof(unsigned int) + //command
 		cDataLength;
 
-	unsigned char* buff = new unsigned char[arraySize] { 0 };
+	std::vector<unsigned char> buff(arraySize, 0);
 	unsigned int buffPtr = 0;
 
 	memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -334,9 +335,7 @@ void WriteStringToPipe(std::string data) {
 	memcpy(&buff[buffPtr], cData, cDataLength);
 	buffPtr += cDataLength;
 
-	WriteToPipe(buff, arraySize);
-
-	delete[] buff;
+	WriteToPipe(buff.data(), arraySize);
 }
 #pragma endregion
 
@@ -375,14 +374,14 @@ bool LogiLedInit()
 
 		if (isPipeConnected) {
 			auto c_str = program_name.c_str();
-			unsigned int strLength = strlen(c_str) + 1;
+			unsigned int strLength = (int)strlen(c_str) + 1;
 			const unsigned int command = LogiCommands::Init;
 			const unsigned int arraySize =
 				sizeof(unsigned int) +  //length
 				sizeof(unsigned int) +  //command
 				strLength;              //str
 
-			unsigned char* buff = new unsigned char [arraySize] { 0 };
+			std::vector<unsigned char> buff(arraySize, 0);
 			unsigned int buffPtr = 0;
 
 			memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -394,9 +393,7 @@ bool LogiLedInit()
 			memcpy(&buff[buffPtr], c_str, strLength);
 			buffPtr += strLength;
 
-			WriteToPipe(buff, arraySize);
-
-			delete[] buff;
+			WriteToPipe(buff.data(), arraySize);
 
 			isInitialized = true;
 			return true;
@@ -422,14 +419,14 @@ bool LogiLedInitWithName(const char name[])
 {
 	if (isPipeConnected) {
 		const char* c_str = name;
-		unsigned int strLength = strlen(c_str) + 1;
+		unsigned int strLength = (int)strlen(c_str) + 1;
 		const unsigned int command = LogiCommands::Init;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
 			sizeof(unsigned int) +  //command
 			strLength;              //str
 
-		unsigned char* buff = new unsigned char [arraySize] { 0 };
+		std::vector<unsigned char> buff(arraySize,  0);
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -441,9 +438,7 @@ bool LogiLedInitWithName(const char name[])
 		memcpy(&buff[buffPtr], c_str, strLength);
 		buffPtr += strLength;
 
-		WriteToPipe(buff, arraySize);
-
-		delete[] buff;
+		WriteToPipe(buff.data(), arraySize);
 
 		return true;
 	}
@@ -459,15 +454,15 @@ bool LogiLedSetTargetDevice(int targetDevice)
 {
 	if (isPipeConnected) {
 		const unsigned int command = LogiCommands::SetTargetDevice;
-		const unsigned int length =
+		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
 			sizeof(unsigned int) + //command
 			sizeof(int);           //argument
-		unsigned char buff[length] = { 0 };
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
-		memcpy(&buff[buffPtr], &length, sizeof(length));
-		buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
@@ -475,7 +470,7 @@ bool LogiLedSetTargetDevice(int targetDevice)
 		memcpy(&buff[buffPtr], &targetDevice, sizeof(targetDevice));
 		buffPtr += sizeof(targetDevice);
 
-		WriteToPipe(buff, length);
+		WriteToPipe(buff, arraySize);
 		return true;
 	}
 
@@ -490,19 +485,19 @@ bool LogiLedSaveCurrentLighting()
 {
 	if (isPipeConnected) {
 		const unsigned int command = LogiCommands::SaveCurrentLighting;
-		const unsigned int length =
+		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
 			sizeof(unsigned int);  //command
-		unsigned char buff[length] = { 0 };
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
-		memcpy(&buff[buffPtr], &length, sizeof(length));
-		buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		WriteToPipe(buff, length);
+		WriteToPipe(buff, arraySize);
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -549,19 +544,19 @@ bool LogiLedRestoreLighting()
 {
 	if (isPipeConnected) {
 		const unsigned int command = LogiCommands::RestoreLighting;
-		const unsigned int length =
+		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
 			sizeof(unsigned int);  //command
-		unsigned char buff[length] = { 0 };
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
-		memcpy(&buff[buffPtr], &length, sizeof(length));
-		buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		WriteToPipe(buff, length);
+		WriteToPipe(buff, arraySize);
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -583,7 +578,7 @@ bool LogiLedFlashLighting(int redPercentage, int greenPercentage, int bluePercen
 			sizeof(int) + //duration
 			sizeof(int); //interval
 
-		unsigned char buff[arraySize];
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -625,7 +620,7 @@ bool LogiLedPulseLighting(int redPercentage, int greenPercentage, int bluePercen
 			sizeof(int) + //duration
 			sizeof(int); //interval
 
-		unsigned char buff[arraySize];
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -658,19 +653,19 @@ bool LogiLedStopEffects()
 {
 	if (isPipeConnected) {
 		const unsigned int command = LogiCommands::StopEffects;
-		const unsigned int length =
+		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
 			sizeof(unsigned int);  //command
-		unsigned char buff[length] = { 0 };
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
-		memcpy(&buff[buffPtr], &length, sizeof(length));
-		buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		WriteToPipe(buff, length);
+		WriteToPipe(buff, arraySize);
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -683,16 +678,16 @@ bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 {
 	if (isPipeConnected) {
 		const unsigned int command = LogiCommands::SetLightingFromBitmap;
-		const unsigned int length =
+		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
 			sizeof(unsigned int) + //command
 			LOGI_LED_BITMAP_SIZE;
 
-		unsigned char buff[length] = { 0 };
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
-		memcpy(&buff[buffPtr], &length, sizeof(length));
-		buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
@@ -700,7 +695,7 @@ bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 		memcpy(&buff[buffPtr], &bitmap[0], sizeof(LOGI_LED_BITMAP_SIZE));
 		buffPtr += sizeof(LOGI_LED_BITMAP_SIZE);
 
-		WriteToPipe(buff, length);
+		WriteToPipe(buff, arraySize);
 		return true;
 	}
 
@@ -722,7 +717,7 @@ bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int gr
 			sizeof(unsigned char) + //b
 			sizeof(int); //key
 
-		unsigned char buff[arraySize];
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -760,7 +755,7 @@ bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int gre
 			sizeof(unsigned char) + //b
 			sizeof(int); //key
 
-		unsigned char buff[arraySize];
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -798,7 +793,7 @@ bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int 
 			sizeof(unsigned char) + //b
 			sizeof(int); //key
 
-		unsigned char buff[arraySize];
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -836,7 +831,7 @@ bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercen
 			sizeof(unsigned char) + //b
 			sizeof(int); //keyName
 
-		unsigned char buff[arraySize];
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -866,15 +861,15 @@ bool LogiLedSaveLightingForKey(LogiLed::KeyName keyName)
 {
 	if (isPipeConnected) {
 		const unsigned int command = LogiCommands::SaveLightingForKey;
-		const unsigned int length =
+		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
 			sizeof(unsigned int) + //command
 			sizeof(int);           //keyName
-		unsigned char buff[length] = { 0 };
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
-		memcpy(&buff[buffPtr], &length, sizeof(length));
-		buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
@@ -882,7 +877,7 @@ bool LogiLedSaveLightingForKey(LogiLed::KeyName keyName)
 		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
 		buffPtr += sizeof(keyName);
 
-		WriteToPipe(buff, length);
+		WriteToPipe(buff, arraySize);
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -895,15 +890,15 @@ bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 {
 	if (isPipeConnected) {
 		const unsigned int command = LogiCommands::RestoreLightingForKey;
-		const unsigned int length =
+		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
 			sizeof(unsigned int) + //command
 			sizeof(int);           //keyName
-		unsigned char buff[length] = { 0 };
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
-		memcpy(&buff[buffPtr], &length, sizeof(length));
-		buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
@@ -911,7 +906,7 @@ bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
 		buffPtr += sizeof(keyName);
 
-		WriteToPipe(buff, length);
+		WriteToPipe(buff, arraySize);
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -934,7 +929,7 @@ bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int gree
 			sizeof(int) + //interval
 			sizeof(int); //keyName
 
-		unsigned char buff[arraySize];
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -983,7 +978,7 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 			sizeof(bool) + //infinite
 			sizeof(int); //keyName
 
-		unsigned char buff[arraySize];
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -1023,15 +1018,15 @@ bool LogiLedStopEffectsOnKey(LogiLed::KeyName keyName)
 {
 	if (isPipeConnected) {
 		const unsigned int command = LogiCommands::StopEffectsOnKey;
-		const unsigned int length =
+		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
 			sizeof(unsigned int) + //command
 			sizeof(int);           //keyName
-		unsigned char buff[length] = { 0 };
+		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
-		memcpy(&buff[buffPtr], &length, sizeof(length));
-		buffPtr += sizeof(length);
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
@@ -1039,7 +1034,7 @@ bool LogiLedStopEffectsOnKey(LogiLed::KeyName keyName)
 		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
 		buffPtr += sizeof(keyName);
 
-		WriteToPipe(buff, length);
+		WriteToPipe(buff, arraySize);
 		return true;
 	}
 	if (isOriginalDllLoaded) {
@@ -1059,14 +1054,14 @@ void LogiLedShutdown()
 		LOG("Informing artemis and closing pipe...");
 
 		const char* c_str = program_name.c_str();
-		unsigned int strLength = strlen(c_str) + 1;
+		unsigned int strLength = (int)strlen(c_str) + 1;
 		const unsigned int command = LogiCommands::Shutdown;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
 			sizeof(unsigned int) +  //command
 			strLength;              //str
 
-		unsigned char* buff = new unsigned char [arraySize] { 0 };
+		std::vector<unsigned char> buff(arraySize, 0);
 		unsigned int buffPtr = 0;
 
 		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
@@ -1078,9 +1073,7 @@ void LogiLedShutdown()
 		memcpy(&buff[buffPtr], c_str, strLength);
 		buffPtr += strLength;
 
-		WriteToPipe(buff, arraySize);
-
-		delete[] buff;
+		WriteToPipe(buff.data(), arraySize);
 
 		ClosePipe();
 	}
