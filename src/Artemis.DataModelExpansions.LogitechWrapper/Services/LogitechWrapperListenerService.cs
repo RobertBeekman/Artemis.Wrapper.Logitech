@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,12 +50,20 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
             {
                 try
                 {
-                    NamedPipeServerStream pipeStream = new(
+                    PipeAccessRule rule = new(new SecurityIdentifier(WellKnownSidType.WorldSid, null), PipeAccessRights.FullControl, AccessControlType.Allow);
+                    PipeSecurity pipeSecurity = new();
+                    pipeSecurity.SetAccessRule(rule);
+
+                    NamedPipeServerStream pipeStream = NamedPipeServerStreamAcl.Create(
                         PIPE_NAME,
                         PipeDirection.In,
                         NamedPipeServerStream.MaxAllowedServerInstances,
                         PipeTransmissionMode.Byte,
-                        PipeOptions.Asynchronous);
+                        PipeOptions.Asynchronous,
+                        0, 
+                        0,
+                        pipeSecurity);
+
                     _logger.Information("Started new pipe stream, waiting for client");
 
                     await pipeStream.WaitForConnectionAsync(_serverLoopCancellationTokenSource.Token).ConfigureAwait(false);
@@ -83,6 +93,10 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
                     break;
                 case LogitechCommand.Shutdown:
                     _logger.Information("LogiLedShutdown: {name}", Encoding.UTF8.GetString(span));
+                    foreach (var key in LedMapping.BitmapMap.Values)
+                    {
+                        Colors[key] = SKColors.Empty;
+                    }
                     break;
                 case LogitechCommand.LogLine:
                     _logger.Information("LogLine: {data}", Encoding.UTF8.GetString(span));
