@@ -23,7 +23,7 @@
 #include "fmt/chrono.h"
 void log_to_file(std::string data) {
 	std::ofstream logFile;
-	logFile.open("Artemis.Wrapper.Logitech.log", std::ios::out | std::ios::app);
+	logFile.open("ArtemisWrapper.log", std::ios::out | std::ios::app);
 
 	std::time_t t = std::time(nullptr);
 	struct tm newTime;
