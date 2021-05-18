@@ -103,6 +103,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
                     break;
                 case LogitechCommand.SetTargetDevice:
                     DeviceType = (LogiDeviceType)BitConverter.ToInt32(span);
+                    _logger.Verbose("SetTargetDevice: {deviceType} ", DeviceType);
                     break;
                 case LogitechCommand.SetLighting:
                     var color = new SKColor(span[0], span[1], span[2]);
