@@ -1,6 +1,5 @@
 ﻿using Artemis.Core.DataModelExpansions;
 using SkiaSharp;
-using System.Collections.Generic;
 
 namespace Artemis.DataModelExpansions.LogitechWrapper.DataModels
 {

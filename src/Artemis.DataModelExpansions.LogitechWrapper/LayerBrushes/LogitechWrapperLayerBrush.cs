@@ -26,8 +26,10 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.LayerBrushes
 
         public override SKColor GetColor(ArtemisLed led, SKPoint renderPoint)
         {
-            if (_wrapperService.Colors.TryGetValue(led.RgbLed.Id, out var color))
+            if (_wrapperService.Colors.TryGetValue(led.RgbLed.Id, out SKColor color))
+            {
                 return color;
+            }
 
             return SKColor.Empty;
         }

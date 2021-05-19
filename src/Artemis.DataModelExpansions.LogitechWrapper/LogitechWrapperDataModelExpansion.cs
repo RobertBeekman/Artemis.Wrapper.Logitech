@@ -2,8 +2,8 @@
 using Artemis.DataModelExpansions.LogitechWrapper.DataModels;
 using Artemis.DataModelExpansions.LogitechWrapper.Services;
 using Serilog;
-using System;
 using SkiaSharp;
+using System;
 
 namespace Artemis.DataModelExpansions.LogitechWrapper
 {
@@ -34,9 +34,9 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
 
         private void WrapperServiceOnBitmapChanged(object sender, EventArgs e)
         {
-            foreach (var item in _wrapperService.Colors)
+            foreach (System.Collections.Generic.KeyValuePair<RGB.NET.Core.LedId, SKColor> item in _wrapperService.Colors)
             {
-                if (!DataModel.TryGetDynamicChild<SKColor>(item.Key.ToString(), out var dc))
+                if (!DataModel.TryGetDynamicChild<SKColor>(item.Key.ToString(), out DynamicChild<SKColor> dc))
                 {
                     dc = DataModel.AddDynamicChild<SKColor>(item.Key.ToString(), default);
                 }

@@ -1,9 +1,4 @@
 ﻿using Artemis.Core.LayerBrushes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Artemis.DataModelExpansions.LogitechWrapper.LayerBrushes;
 
 namespace Artemis.DataModelExpansions.LogitechWrapper

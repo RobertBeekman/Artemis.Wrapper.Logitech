@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Artemis.DataModelExpansions.LogitechWrapper.Services
+﻿namespace Artemis.DataModelExpansions.LogitechWrapper.Services
 {
     internal enum HidCode
     {

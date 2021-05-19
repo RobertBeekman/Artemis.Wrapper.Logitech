@@ -1,11 +1,8 @@
 ﻿using Artemis.Core;
 using Microsoft.Win32;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,14 +31,18 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
         public override bool IsMet()
         {
             //this pre requisite *should* set both 32 and 64 bit keys, so we'll only check one of them :)
-            var key64 = Registry.LocalMachine.OpenSubKey(REGISTRY_PATH_64);
+            RegistryKey key64 = Registry.LocalMachine.OpenSubKey(REGISTRY_PATH_64);
             if (key64 == null)
+            {
                 return false;
+            }
 
-            var dllPath = key64.GetValue(null)?.ToString();
+            string dllPath = key64.GetValue(null)?.ToString();
 
             if (dllPath == null)
+            {
                 return false;
+            }
 
             return dllPath.Contains(DLL_NAME);
         }
@@ -82,25 +83,27 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
 
         public override Task Execute(CancellationToken cancellationToken)
         {
-            var key = Registry.LocalMachine.OpenSubKey(RegistryPath, true);
+            RegistryKey key = Registry.LocalMachine.OpenSubKey(RegistryPath, true);
             //if we can open this key right away, this probably means the user
             //has either LGS or LGHUB installed. we do not need to create the 
             //entire registry structure
             if (key == null)
             {
                 key = Registry.LocalMachine;
-                foreach (var pathSegment in RegistryPath.Split('\\'))
+                foreach (string pathSegment in RegistryPath.Split('\\'))
                 {
                     //loop through each path segment, create or open each key
                     //if it fails, throw an exception
                     key = key.CreateSubKey(pathSegment, true);
 
                     if (key == null)
+                    {
                         throw new Exception();
+                    }
                 }
             }
 
-            var defaultPath = key.GetValue(null);
+            string defaultPath = key?.GetValue(null)?.ToString();
             if (defaultPath != null)
             {
                 //if we get here, it means the user already has an installation of either LGS or GHUB.
