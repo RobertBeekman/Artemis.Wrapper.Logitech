@@ -5,11 +5,9 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.DataModels
 {
     public class LogitechWrapperDataModel : DataModel
     {
-
+        public SKColor BackgroundColor { get; set; }
+        public KeysDataModel Keys { get; set; } = new();
     }
 
-    public class KeyDataModel : DataModel
-    {
-        public SKColor Color { get; set; }
-    }
+    public class KeysDataModel : DataModel { }
 }

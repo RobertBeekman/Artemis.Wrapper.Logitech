@@ -1,9 +1,11 @@
 ﻿using Artemis.Core.DataModelExpansions;
 using Artemis.DataModelExpansions.LogitechWrapper.DataModels;
 using Artemis.DataModelExpansions.LogitechWrapper.Services;
+using RGB.NET.Core;
 using Serilog;
 using SkiaSharp;
 using System;
+using System.Collections.Generic;
 
 namespace Artemis.DataModelExpansions.LogitechWrapper
 {
@@ -11,6 +13,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
     {
         private readonly ILogger _logger;
         private readonly LogitechWrapperListenerService _wrapperService;
+        private readonly Dictionary<LedId, DynamicChild<SKColor>> _colorsCache = new();
 
         public LogitechWrapperDataModelExpansion(ILogger logger, LogitechWrapperListenerService service)
         {
@@ -28,20 +31,21 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
             _wrapperService.BitmapChanged -= WrapperServiceOnBitmapChanged;
         }
 
-        public override void Update(double deltaTime)
-        {
-        }
+        public override void Update(double deltaTime) { }
 
         private void WrapperServiceOnBitmapChanged(object sender, EventArgs e)
         {
-            foreach (System.Collections.Generic.KeyValuePair<RGB.NET.Core.LedId, SKColor> item in _wrapperService.Colors)
+            DataModel.BackgroundColor = _wrapperService.BackgroundColor;
+
+            foreach (var item in _wrapperService.Colors)
             {
-                if (!DataModel.TryGetDynamicChild<SKColor>(item.Key.ToString(), out DynamicChild<SKColor> dc))
+                if (!_colorsCache.TryGetValue(item.Key, out DynamicChild<SKColor> colorDataModel))
                 {
-                    dc = DataModel.AddDynamicChild<SKColor>(item.Key.ToString(), default);
+                    colorDataModel = DataModel.Keys.AddDynamicChild<SKColor>(item.Key.ToString(), default);
+                    _colorsCache.Add(item.Key, colorDataModel);
                 }
 
-                dc.Value = item.Value;
+                colorDataModel.Value = item.Value;
             }
         }
     }

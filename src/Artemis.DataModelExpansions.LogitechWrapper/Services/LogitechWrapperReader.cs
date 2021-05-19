@@ -21,7 +21,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
             _logger = logger;
             _pipe = pipe;
             _cancellationTokenSource = cancellationTokenSource;
-            _listenerTask = Task.Factory.StartNew(async () => await ReadLoop().ConfigureAwait(false), TaskCreationOptions.LongRunning);
+            _listenerTask = Task.Run(ReadLoop);
         }
 
         public async Task<WrapperPacket> ReadWrapperPacket()
