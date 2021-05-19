@@ -37,7 +37,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper
         {
             DataModel.BackgroundColor = _wrapperService.BackgroundColor;
 
-            foreach (var item in _wrapperService.Colors)
+            foreach (KeyValuePair<LedId, SKColor> item in _wrapperService.Colors)
             {
                 if (!_colorsCache.TryGetValue(item.Key, out DynamicChild<SKColor> colorDataModel))
                 {

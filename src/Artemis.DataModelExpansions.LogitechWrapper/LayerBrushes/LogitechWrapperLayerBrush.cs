@@ -41,7 +41,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.LayerBrushes
 
         private void OnWrapperServiceBitmapChanged(object sender, System.EventArgs e)
         {
-            foreach(var a in _wrapperService.Colors)
+            foreach (KeyValuePair<LedId, SKColor> a in _wrapperService.Colors)
             {
                 _colors[a.Key] = a.Value;
             }
