@@ -25,7 +25,9 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
         private const string PIPE_NAME = "Artemis\\Logitech";
         private const int LOGI_LED_BITMAP_WIDTH = 21;
         private const int LOGI_LED_BITMAP_HEIGHT = 6;
-        private const int LOGI_LED_BITMAP_SIZE = (LOGI_LED_BITMAP_WIDTH * LOGI_LED_BITMAP_HEIGHT);
+        private const int LOGI_LED_BITMAP_BYTES_PER_KEY = 4;
+
+        private const int LOGI_LED_BITMAP_SIZE = (LOGI_LED_BITMAP_WIDTH * LOGI_LED_BITMAP_HEIGHT * LOGI_LED_BITMAP_BYTES_PER_KEY);
 
         public event EventHandler BitmapChanged;
         public event EventHandler ClientConnected;

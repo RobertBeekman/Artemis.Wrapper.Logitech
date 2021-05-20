@@ -692,8 +692,8 @@ bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		memcpy(&buff[buffPtr], &bitmap[0], sizeof(LOGI_LED_BITMAP_SIZE));
-		buffPtr += sizeof(LOGI_LED_BITMAP_SIZE);
+		memcpy(&buff[buffPtr], &bitmap[0], LOGI_LED_BITMAP_SIZE);
+		buffPtr += LOGI_LED_BITMAP_SIZE;
 
 		WriteToPipe(buff, arraySize);
 		return true;
