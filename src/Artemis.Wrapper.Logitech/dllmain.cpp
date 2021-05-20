@@ -2,77 +2,11 @@
 #pragma warning( disable : 6387 )
 #include "pch.h"
 #include "LogitechLEDLib.h"
+#include "LogiCommands.h"
+#include "Constants.h"
+#include "Logger.h"
 #include <string>
 #include <vector>
-
-#define PIPE_NAME L"\\\\.\\pipe\\Artemis\\Logitech"
-#define ARTEMIS_REG_NAME L"Artemis"
-#define ARTEMIS_EXE_NAME "Artemis.UI.exe"
-
-#ifdef _WIN64
-#define REGISTRY_PATH L"SOFTWARE\\Classes\\CLSID\\{a6519e67-7632-4375-afdf-caa889744403}\\ServerBinary" 
-#define _BITS "64"
-#else
-#define REGISTRY_PATH L"SOFTWARE\\Classes\\WOW6432Node\\CLSID\\{a6519e67-7632-4375-afdf-caa889744403}\\ServerBinary"
-#define _BITS "32"
-#endif
-
-#ifdef _DEBUG
-#include <fstream>
-#include "fmt/format.h"
-#include "fmt/chrono.h"
-void log_to_file(std::string data) {
-	std::ofstream logFile;
-	logFile.open("ArtemisWrapper.log", std::ios::out | std::ios::app);
-
-	std::time_t t = std::time(nullptr);
-	struct tm newTime;
-	localtime_s(&newTime, &t);
-	std::string timeHeader = fmt::format("[{:%Y-%m-%d %H:%M:%S}] ", newTime);
-
-	logFile << timeHeader << data << '\n';
-	logFile.close();
-}
-#define LOG(x) log_to_file(x)
-#else
-#define LOG(x) ((void)0)
-#endif 
-
-enum LogiCommands : unsigned int {
-	LogLine = 0,
-	Init,
-	InitWithName,
-	GetSdkVersion,
-	GetConfigOptionNumber,
-	GetConfigOptionBool,
-	GetConfigOptionColor,
-	GetConfigOptionRect,
-	GetConfigOptionString,
-	GetConfigOptionKeyInput,
-	GetConfigOptionSelect,
-	GetConfigOptionRange,
-	SetConfigOptionLabel,
-	SetTargetDevice,
-	SaveCurrentLighting,
-	SetLighting,
-	RestoreLighting,
-	FlashLighting,
-	PulseLighting,
-	StopEffects,
-	SetLightingFromBitmap,
-	SetLightingForKeyWithScanCode,
-	SetLightingForKeyWithHidCode,
-	SetLightingForKeyWithQuartzCode,
-	SetLightingForKeyWithKeyName,
-	SaveLightingForKey,
-	RestoreLightingForKey,
-	ExcludeKeysFromBitmap,
-	FlashSingleKey,
-	PulseSingleKey,
-	StopEffectsOnKey,
-	SetLightingForTargetZone,
-	Shutdown,
-};
 
 #pragma region Static variables
 static bool isInitialized = false;
