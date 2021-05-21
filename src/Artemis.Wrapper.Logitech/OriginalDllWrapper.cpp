@@ -33,6 +33,11 @@ void OriginalDllWrapper::LoadDll() {
 		return;
 	}
 
+	//Why do i need to call this before initing a DllHelper?
+	//if i remove this line, the game loading the dll crashes.
+	//investigate
+	LoadLibraryW(buffer);
+
 	_dll = new DllHelper(buffer);
 
 	if (!IsDllLoaded()) {

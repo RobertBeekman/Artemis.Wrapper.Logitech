@@ -5,7 +5,11 @@
 #include "fmt/chrono.h"
 #include <fstream>
 #include <string>
+#include <mutex>
+
+static std::mutex fileMutex;
 inline void log_to_file(std::string data) {
+	fileMutex.lock();
 	std::ofstream logFile;
 	logFile.open("ArtemisWrapper.log", std::ios::out | std::ios::app);
 
@@ -16,6 +20,7 @@ inline void log_to_file(std::string data) {
 
 	logFile << timeHeader << data << '\n';
 	logFile.close();
+	fileMutex.unlock();
 }
 #define LOG(x) log_to_file(x)
 #else

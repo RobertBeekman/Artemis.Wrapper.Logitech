@@ -30,5 +30,5 @@ public:
         return _module != NULL;
     }
 private:
-    HMODULE _module;
+    HMODULE _module = NULL;
 };
