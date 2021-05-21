@@ -3,15 +3,7 @@
 #include "OriginalDllWrapper.h"
 #include "Constants.h"
 #include "Logger.h"
-
-std::string remove_me(const std::wstring& wstr)
-{
-	if (wstr.empty()) return std::string();
-	int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
-	std::string strTo(size_needed, 0);
-	WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
-	return strTo;
-}
+#include "Utils.h"
 
 void OriginalDllWrapper::LoadDll() {
 	if (IsDllLoaded()) {
@@ -22,22 +14,22 @@ void OriginalDllWrapper::LoadDll() {
 	HKEY registryKey;
 	LSTATUS result = RegOpenKeyExW(HKEY_LOCAL_MACHINE, REGISTRY_PATH, 0, KEY_QUERY_VALUE, &registryKey);
 	if (result != ERROR_SUCCESS) {
-		LOG(fmt::format("Failed to open registry key \'{}\'. Error: {}}", remove_me(REGISTRY_PATH), result));
+		LOG(fmt::format("Failed to open registry key \'{}\'. Error: {}}", utf8_encode(REGISTRY_PATH), result));
 		return;
 	}
 
-	LOG(fmt::format("Opened registry key \'{}\'", remove_me(REGISTRY_PATH)));
+	LOG(fmt::format("Opened registry key \'{}\'", utf8_encode(REGISTRY_PATH)));
 	WCHAR buffer[255] = { 0 };
 	DWORD bufferSize = sizeof(buffer);
 	LSTATUS resultB = RegQueryValueExW(registryKey, ARTEMIS_REG_NAME, 0, NULL, (LPBYTE)buffer, &bufferSize);
 	if (resultB != ERROR_SUCCESS) {
-		LOG(fmt::format("Failed to query registry name \'{}\'. Error: {}", remove_me(ARTEMIS_REG_NAME), resultB));
+		LOG(fmt::format("Failed to query registry name \'{}\'. Error: {}", utf8_encode(ARTEMIS_REG_NAME), resultB));
 		return;
 	}
 
-	LOG(fmt::format("Queried registry name \'{}\' and got value \'{}\'", remove_me(ARTEMIS_REG_NAME), remove_me(buffer)));
+	LOG(fmt::format("Queried registry name \'{}\' and got value \'{}\'", utf8_encode(ARTEMIS_REG_NAME), utf8_encode(buffer)));
 	if (GetFileAttributesW(buffer) == INVALID_FILE_ATTRIBUTES) {
-		LOG(fmt::format("Dll file \'{path}\' does not exist. Failed to load original dll.", remove_me(buffer)));
+		LOG(fmt::format("Dll file \'{path}\' does not exist. Failed to load original dll.", utf8_encode(buffer)));
 		return;
 	}
 
