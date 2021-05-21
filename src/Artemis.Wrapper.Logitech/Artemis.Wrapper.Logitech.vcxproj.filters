@@ -45,6 +45,12 @@
     <ClInclude Include="LogiCommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DllHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OriginalDllWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -54,6 +60,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="format.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OriginalDllWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

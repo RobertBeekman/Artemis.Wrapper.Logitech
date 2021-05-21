@@ -1,10 +1,11 @@
 #pragma once
 
 #ifdef _DEBUG
-#include <fstream>
 #include "fmt/format.h"
 #include "fmt/chrono.h"
-void log_to_file(std::string data) {
+#include <fstream>
+#include <string>
+inline void log_to_file(std::string data) {
 	std::ofstream logFile;
 	logFile.open("ArtemisWrapper.log", std::ios::out | std::ios::app);
 

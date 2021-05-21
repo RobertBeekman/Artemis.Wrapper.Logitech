@@ -5,15 +5,15 @@
 #include "LogiCommands.h"
 #include "Constants.h"
 #include "Logger.h"
+#include "OriginalDllWrapper.h"
 #include <string>
 #include <vector>
 
 #pragma region Static variables
+static OriginalDllWrapper originalDllWrapper;
 static bool isInitialized = false;
 static bool isPipeConnected = false;
-static bool isOriginalDllLoaded = false;
 static HANDLE artemisPipe = NULL;
-static HMODULE originalDll = NULL;
 static std::string program_name = "";
 #pragma endregion
 
@@ -54,146 +54,6 @@ std::string GetCallerPath()
 }
 #pragma endregion
 
-#pragma region Dll Management
-#pragma region FuncPointer typedefs
-typedef void (*FuncVoid)();
-typedef bool (*FuncBool)();
-typedef bool (*FuncBoolName)(const char name[]);
-typedef bool (*FuncBoolBitmap)(unsigned char bitmap[]);
-typedef bool (*FuncBoolDeviceType)(int targetDevice);
-typedef bool (*FuncBoolKeyName)(LogiLed::KeyName keyName);
-typedef bool (*FuncBoolKeyNames)(LogiLed::KeyName* keyList, int listCount);
-typedef bool (*FuncBoolColors)(int redPercentage, int greenPercentage, int bluePercentage);
-typedef bool (*FuncBoolKeyCodeColor)(int keyCode, int redPercentage, int greenPercentage, int bluePercentage);
-typedef bool (*FuncBoolKeyNameColor)(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage);
-typedef bool (*FuncBoolColorInterval)(int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval);
-typedef bool (*FuncBoolFlashSingleKey)(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval);
-typedef bool (*FuncBoolPulseSingleKey)(LogiLed::KeyName keyName, int startRedPercentage, int startGreenPercentage, int startBluePercentage, int finishRedPercentage, int finishGreenPercentage, int finishBluePercentage, int msDuration, bool isInfinite);
-#pragma endregion //FuncPointer typedefs
-
-#pragma region Original Dll Functions
-FuncBool LogiLedInitOriginal;
-FuncBoolName LogiLedInitWithNameOriginal;
-
-FuncBoolDeviceType LogiLedSetTargetDeviceOriginal;
-FuncBool LogiLedSaveCurrentLightingOriginal;
-FuncBoolColors LogiLedSetLightingOriginal;
-FuncBool LogiLedRestoreLightingOriginal;
-FuncBoolColorInterval LogiLedFlashLightingOriginal;
-FuncBoolColorInterval LogiLedPulseLightingOriginal;
-FuncBool LogiLedStopEffectsOriginal;
-
-FuncBoolBitmap LogiLedSetLightingFromBitmapOriginal;
-FuncBoolKeyCodeColor LogiLedSetLightingForKeyWithScanCodeOriginal;
-FuncBoolKeyCodeColor LogiLedSetLightingForKeyWithHidCodeOriginal;
-FuncBoolKeyCodeColor LogiLedSetLightingForKeyWithQuartzCodeOriginal;
-FuncBoolKeyNameColor LogiLedSetLightingForKeyWithKeyNameOriginal;
-FuncBoolKeyName LogiLedSaveLightingForKeyOriginal;
-FuncBoolKeyName LogiLedRestoreLightingForKeyOriginal;
-FuncBoolKeyNames LogiLedExcludeKeysFromBitmapOriginal;
-
-FuncBoolFlashSingleKey LogiLedFlashSingleKeyOriginal;
-FuncBoolPulseSingleKey LogiLedPulseSingleKeyOriginal;
-FuncBoolKeyName LogiLedStopEffectsOnKeyOriginal;
-
-FuncVoid LogiLedShutdownOriginal;
-#pragma endregion //Original Dll Methods
-
-#pragma region Original dll loading & unloading
-void LoadOriginalDll()
-{
-	if (isOriginalDllLoaded) {
-		LOG("Tried to load original dll again, returning true");
-		return;
-	}
-
-	HKEY registryKey;
-	LSTATUS result = RegOpenKeyExW(HKEY_LOCAL_MACHINE, REGISTRY_PATH, 0, KEY_QUERY_VALUE, &registryKey);
-	if (result != ERROR_SUCCESS) {
-		LOG(fmt::format("Failed to open registry key \'{}\'. Error: {}}", utf8_encode(REGISTRY_PATH), result));
-		return;
-	}
-
-	LOG(fmt::format("Opened registry key \'{}\'", utf8_encode(REGISTRY_PATH)));
-	WCHAR buffer[255] = { 0 };
-	DWORD bufferSize = sizeof(buffer);
-	LSTATUS resultB = RegQueryValueExW(registryKey, ARTEMIS_REG_NAME, 0, NULL, (LPBYTE)buffer, &bufferSize);
-	if (resultB != ERROR_SUCCESS) {
-		LOG(fmt::format("Failed to query registry name \'{}\'. Error: {}", utf8_encode(ARTEMIS_REG_NAME), resultB));
-		return;
-	}
-
-	LOG(fmt::format("Queried registry name \'{}\' and got value \'{}\'", utf8_encode(ARTEMIS_REG_NAME), utf8_encode(buffer)));
-	if (GetFileAttributesW(buffer) == INVALID_FILE_ATTRIBUTES) {
-		LOG(fmt::format("Dll file \'{path}\' does not exist. Failed to load original dll.", utf8_encode(buffer)));
-		return;
-	}
-
-	originalDll = LoadLibraryW(buffer);
-	isOriginalDllLoaded = originalDll != NULL;
-	if (!isOriginalDllLoaded) {
-		LOG("Failed to load original dll");
-		return;
-	}
-	LOG("Loaded original dll successfully");
-	LogiLedInitOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedInit");
-	LogiLedInitWithNameOriginal = (FuncBoolName)GetProcAddress(originalDll, "LogiLedInitWithName");
-	LogiLedSetTargetDeviceOriginal = (FuncBoolDeviceType)GetProcAddress(originalDll, "LogiLedSetTargetDevice");
-	LogiLedSaveCurrentLightingOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedSaveCurrentLighting");
-	LogiLedSetLightingOriginal = (FuncBoolColors)GetProcAddress(originalDll, "LogiLedSetLighting");
-	LogiLedRestoreLightingOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedRestoreLighting");
-	LogiLedFlashLightingOriginal = (FuncBoolColorInterval)GetProcAddress(originalDll, "LogiLedFlashLighting");
-	LogiLedPulseLightingOriginal = (FuncBoolColorInterval)GetProcAddress(originalDll, "LogiLedPulseLighting");
-	LogiLedStopEffectsOriginal = (FuncBool)GetProcAddress(originalDll, "LogiLedStopEffects");
-	LogiLedSetLightingFromBitmapOriginal = (FuncBoolBitmap)GetProcAddress(originalDll, "LogiLedSetLightingFromBitmap");
-	LogiLedSetLightingForKeyWithScanCodeOriginal = (FuncBoolKeyCodeColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithScanCode");
-	LogiLedSetLightingForKeyWithHidCodeOriginal = (FuncBoolKeyCodeColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithHidCode");
-	LogiLedSetLightingForKeyWithQuartzCodeOriginal = (FuncBoolKeyCodeColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithQuartzCode");
-	LogiLedSetLightingForKeyWithKeyNameOriginal = (FuncBoolKeyNameColor)GetProcAddress(originalDll, "LogiLedSetLightingForKeyWithKeyName");
-	LogiLedSaveLightingForKeyOriginal = (FuncBoolKeyName)GetProcAddress(originalDll, "LogiLedSaveLightingForKey");
-	LogiLedRestoreLightingForKeyOriginal = (FuncBoolKeyName)GetProcAddress(originalDll, "LogiLedRestoreLightingForKey");
-	LogiLedExcludeKeysFromBitmapOriginal = (FuncBoolKeyNames)GetProcAddress(originalDll, "LogiLedExcludeKeysFromBitmap");
-	LogiLedFlashSingleKeyOriginal = (FuncBoolFlashSingleKey)GetProcAddress(originalDll, "LogiLedFlashSingleKey");
-	LogiLedPulseSingleKeyOriginal = (FuncBoolPulseSingleKey)GetProcAddress(originalDll, "LogiLedPulseSingleKey");
-	LogiLedStopEffectsOnKeyOriginal = (FuncBoolKeyName)GetProcAddress(originalDll, "LogiLedStopEffectsOnKey");
-	LogiLedShutdownOriginal = (FuncVoid)GetProcAddress(originalDll, "LogiLedShutdown");
-	LOG("Got original function addresses successfully");
-	return;
-}
-
-void FreeOriginalDll() {
-	if (!isOriginalDllLoaded)
-		return;
-
-	LogiLedInitOriginal = NULL;
-	LogiLedInitWithNameOriginal = NULL;
-	LogiLedSetTargetDeviceOriginal = NULL;
-	LogiLedSaveCurrentLightingOriginal = NULL;
-	LogiLedSetLightingOriginal = NULL;
-	LogiLedRestoreLightingOriginal = NULL;
-	LogiLedFlashLightingOriginal = NULL;
-	LogiLedPulseLightingOriginal = NULL;
-	LogiLedStopEffectsOriginal = NULL;
-	LogiLedSetLightingFromBitmapOriginal = NULL;
-	LogiLedSetLightingForKeyWithScanCodeOriginal = NULL;
-	LogiLedSetLightingForKeyWithHidCodeOriginal = NULL;
-	LogiLedSetLightingForKeyWithQuartzCodeOriginal = NULL;
-	LogiLedSetLightingForKeyWithKeyNameOriginal = NULL;
-	LogiLedSaveLightingForKeyOriginal = NULL;
-	LogiLedRestoreLightingForKeyOriginal = NULL;
-	LogiLedExcludeKeysFromBitmapOriginal = NULL;
-	LogiLedFlashSingleKeyOriginal = NULL;
-	LogiLedPulseSingleKeyOriginal = NULL;
-	LogiLedStopEffectsOnKeyOriginal = NULL;
-	LogiLedShutdownOriginal = NULL;
-	FreeLibrary(originalDll);
-	originalDll = NULL;
-	isOriginalDllLoaded = false;
-	LOG("Freed original dll");
-}
-#pragma endregion //Original dll loading & unloading
-#pragma endregion //Dll Management
-
 #pragma region Pipe connection
 void ConnectToPipe() {
 	LOG("Connecting to pipe...");
@@ -219,7 +79,7 @@ void ClosePipe() {
 }
 
 void WriteToPipe(LPCVOID data, DWORD dataLength) {
-	if (isOriginalDllLoaded)
+	if (originalDllWrapper.IsDllLoaded())
 		return;
 
 	if (!isPipeConnected) {
@@ -339,11 +199,11 @@ bool LogiLedInit()
 
 	LOG("Trying to load original dll...");
 
-	LoadOriginalDll();
+	originalDllWrapper.LoadDll();
 
-	if (isOriginalDllLoaded) {
+	if (originalDllWrapper.IsDllLoaded()) {
 		isInitialized = true;
-		return LogiLedInitOriginal();
+		return originalDllWrapper.LogiLedInit();
 	}
 	isInitialized = false;
 	return false;
@@ -377,8 +237,8 @@ bool LogiLedInitWithName(const char name[])
 		return true;
 	}
 
-	if (isOriginalDllLoaded) {
-		return LogiLedInitWithNameOriginal(name);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedInitWithName(name);
 	}
 
 	return false;
@@ -408,8 +268,8 @@ bool LogiLedSetTargetDevice(int targetDevice)
 		return true;
 	}
 
-	if (isOriginalDllLoaded) {
-		return LogiLedSetTargetDeviceOriginal(targetDevice);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSetTargetDevice(targetDevice);
 	}
 
 	return false;
@@ -434,8 +294,8 @@ bool LogiLedSaveCurrentLighting()
 		WriteToPipe(buff, arraySize);
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedSaveCurrentLightingOriginal();
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSaveCurrentLighting();
 	}
 	return false;
 }
@@ -468,8 +328,8 @@ bool LogiLedSetLighting(int redPercentage, int greenPercentage, int bluePercenta
 
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedSetLightingOriginal(redPercentage, greenPercentage, bluePercentage);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSetLighting(redPercentage, greenPercentage, bluePercentage);
 	}
 	return false;
 }
@@ -493,8 +353,8 @@ bool LogiLedRestoreLighting()
 		WriteToPipe(buff, arraySize);
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedRestoreLightingOriginal();
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedRestoreLighting();
 	}
 	return false;
 }
@@ -535,8 +395,8 @@ bool LogiLedFlashLighting(int redPercentage, int greenPercentage, int bluePercen
 
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedFlashLightingOriginal(redPercentage, greenPercentage, bluePercentage, milliSecondsDuration, milliSecondsInterval);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedFlashLighting(redPercentage, greenPercentage, bluePercentage, milliSecondsDuration, milliSecondsInterval);
 	}
 	return false;
 }
@@ -577,8 +437,8 @@ bool LogiLedPulseLighting(int redPercentage, int greenPercentage, int bluePercen
 
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedPulseLightingOriginal(redPercentage, greenPercentage, bluePercentage, milliSecondsDuration, milliSecondsInterval);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedPulseLighting(redPercentage, greenPercentage, bluePercentage, milliSecondsDuration, milliSecondsInterval);
 	}
 	return false;
 }
@@ -602,8 +462,8 @@ bool LogiLedStopEffects()
 		WriteToPipe(buff, arraySize);
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedStopEffectsOriginal();
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedStopEffects();
 	}
 	return false;
 }
@@ -633,8 +493,8 @@ bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 		return true;
 	}
 
-	if (isOriginalDllLoaded) {
-		return LogiLedSetLightingFromBitmapOriginal(bitmap);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSetLightingFromBitmap(bitmap);
 	}
 	return false;
 }
@@ -671,8 +531,8 @@ bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int gr
 
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedSetLightingForKeyWithScanCodeOriginal(keyCode, redPercentage, greenPercentage, bluePercentage);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSetLightingForKeyWithScanCode(keyCode, redPercentage, greenPercentage, bluePercentage);
 	}
 	return false;
 }
@@ -709,8 +569,8 @@ bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int gre
 
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedSetLightingForKeyWithHidCodeOriginal(keyCode, redPercentage, greenPercentage, bluePercentage);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSetLightingForKeyWithHidCode(keyCode, redPercentage, greenPercentage, bluePercentage);
 	}
 	return false;
 }
@@ -747,8 +607,8 @@ bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int 
 
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedSetLightingForKeyWithQuartzCodeOriginal(keyCode, redPercentage, greenPercentage, bluePercentage);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSetLightingForKeyWithQuartzCode(keyCode, redPercentage, greenPercentage, bluePercentage);
 	}
 	return false;
 }
@@ -785,8 +645,8 @@ bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercen
 
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedSetLightingForKeyWithKeyNameOriginal(keyName, redPercentage, greenPercentage, bluePercentage);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSetLightingForKeyWithKeyName(keyName, redPercentage, greenPercentage, bluePercentage);
 	}
 	return false;
 }
@@ -814,8 +674,8 @@ bool LogiLedSaveLightingForKey(LogiLed::KeyName keyName)
 		WriteToPipe(buff, arraySize);
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedSaveLightingForKeyOriginal(keyName);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSaveLightingForKey(keyName);
 	}
 	return false;
 }
@@ -843,8 +703,8 @@ bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 		WriteToPipe(buff, arraySize);
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedRestoreLightingForKeyOriginal(keyName);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedRestoreLightingForKey(keyName);
 	}
 	return false;
 }
@@ -889,8 +749,8 @@ bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int gree
 
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedFlashSingleKeyOriginal(keyName, redPercentage, greenPercentage, bluePercentage, msDuration, msInterval);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedFlashSingleKey(keyName, redPercentage, greenPercentage, bluePercentage, msDuration, msInterval);
 	}
 	return false;
 }
@@ -942,8 +802,8 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedPulseSingleKeyOriginal(keyName, startRedPercentage, startGreenPercentage, startBluePercentage, finishRedPercentage, finishGreenPercentage, finishBluePercentage, msDuration, isInfinite);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedPulseSingleKey(keyName, startRedPercentage, startGreenPercentage, startBluePercentage, finishRedPercentage, finishGreenPercentage, finishBluePercentage, msDuration, isInfinite);
 	}
 	return false;
 }
@@ -971,8 +831,8 @@ bool LogiLedStopEffectsOnKey(LogiLed::KeyName keyName)
 		WriteToPipe(buff, arraySize);
 		return true;
 	}
-	if (isOriginalDllLoaded) {
-		return LogiLedStopEffectsOnKeyOriginal(keyName);
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedStopEffectsOnKey(keyName);
 	}
 	return false;
 }
@@ -1011,15 +871,6 @@ void LogiLedShutdown()
 
 		ClosePipe();
 	}
-
-	if (isOriginalDllLoaded) {
-		LOG("Calling original shutdown and freeing original dll...");
-		LogiLedShutdownOriginal();
-		FreeOriginalDll();
-	}
-
-	if (!isPipeConnected && !isOriginalDllLoaded)
-		LOG("Exiting without doing anything. Fix?");
 
 	isInitialized = false;
 	return;
