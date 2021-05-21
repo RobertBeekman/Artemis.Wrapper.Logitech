@@ -18,7 +18,9 @@ private:
 
 class DllHelper {
 public:
-    explicit DllHelper(LPCTSTR filename) : _module(LoadLibraryW(filename)) {}
+    void Load(LPCTSTR filename) {
+        _module = LoadLibrary(filename);
+    }
 
     ~DllHelper() { FreeLibrary(_module); }
 

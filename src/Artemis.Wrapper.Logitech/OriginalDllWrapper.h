@@ -5,7 +5,7 @@
 
 class OriginalDllWrapper {
 private:
-	DllHelper* _dll = NULL;
+	DllHelper dll;
 	void LoadFunctions();
 public:
 	void LoadDll();

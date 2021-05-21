@@ -33,23 +33,21 @@ void OriginalDllWrapper::LoadDll() {
 		return;
 	}
 
-	//Why do i need to call this before initing a DllHelper?
-	//if i remove this line, the game loading the dll crashes.
-	//investigate
-	LoadLibraryW(buffer);
-
-	_dll = new DllHelper(buffer);
+	dll.Load(buffer);
 
 	if (!IsDllLoaded()) {
 		LOG("Failed to load original dll");
 		return;
 	}
+
+	LOG("Loaded original dll");
+
 	LoadFunctions();
+
+	LOG("Loaded original dll functions");
 }
 
 void OriginalDllWrapper::LoadFunctions() {
-	auto dll = *_dll;
-
 	LogiLedInit = dll["LogiLedInit"];
 	LogiLedInitWithName = dll["LogiLedInitWithName"];
 
@@ -91,9 +89,5 @@ void OriginalDllWrapper::LoadFunctions() {
 }
 
 bool OriginalDllWrapper::IsDllLoaded(){
-	if (_dll == NULL) {
-		return false;
-	}
-
-	return _dll->IsLoaded();
+	return dll.IsLoaded();
 }
