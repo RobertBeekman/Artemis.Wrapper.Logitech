@@ -3,7 +3,7 @@ using Microsoft.Win32;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.Prerequisites
+namespace Artemis.Plugins.Wrappers.Logitech.Prerequisites
 {
     internal class LogitechWrapperPrerequisite : PluginPrerequisite
     {

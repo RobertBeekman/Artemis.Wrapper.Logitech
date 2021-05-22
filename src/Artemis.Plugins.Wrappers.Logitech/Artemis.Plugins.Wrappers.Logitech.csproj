@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
     <ShouldIncludeNativeSkiaSharp>false</ShouldIncludeNativeSkiaSharp>
-    <AssemblyName>Artemis.DataModelExpansions.LogitechWrapper</AssemblyName>
-    <RootNamespace>Artemis.DataModelExpansions.LogitechWrapper</RootNamespace>
+    <AssemblyName>Artemis.Plugins.Wrappers.Logitech</AssemblyName>
+    <RootNamespace>Artemis.Plugins.Wrappers.Logitech</RootNamespace>
     <UseWPF>true</UseWPF>
     <Platforms>x64</Platforms>
     <GenerateDependencyFile>False</GenerateDependencyFile>

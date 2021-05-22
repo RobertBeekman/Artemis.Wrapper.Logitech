@@ -5,7 +5,7 @@ using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.Services
+namespace Artemis.Plugins.Wrappers.Logitech.Services
 {
     internal class LogitechWrapperReader : IDisposable
     {

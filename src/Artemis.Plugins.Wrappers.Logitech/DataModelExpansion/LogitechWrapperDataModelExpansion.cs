@@ -1,13 +1,13 @@
 ﻿using Artemis.Core.DataModelExpansions;
-using Artemis.DataModelExpansions.LogitechWrapper.DataModelExpansion.DataModels;
-using Artemis.DataModelExpansions.LogitechWrapper.Services;
+using Artemis.Plugins.Wrappers.Logitech.DataModelExpansion.DataModels;
+using Artemis.Plugins.Wrappers.Logitech.Services;
 using RGB.NET.Core;
 using Serilog;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.DataModelExpansion
+namespace Artemis.Plugins.Wrappers.Logitech.DataModelExpansion
 {
     public class LogitechWrapperDataModelExpansion : DataModelExpansion<LogitechWrapperDataModel>
     {

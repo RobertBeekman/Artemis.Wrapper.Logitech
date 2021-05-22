@@ -4,7 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.Prerequisites
+namespace Artemis.Plugins.Wrappers.Logitech.Prerequisites
 {
     public class WriteLogitechRegistryPathAction : PluginPrerequisiteAction
     {

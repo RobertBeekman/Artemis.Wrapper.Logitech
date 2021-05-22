@@ -1,7 +1,7 @@
 ﻿using RGB.NET.Core;
 using System.Collections.Generic;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.Services
+namespace Artemis.Plugins.Wrappers.Logitech.Services
 {
     internal static class LedMapping
     {

@@ -1,4 +1,4 @@
-﻿namespace Artemis.DataModelExpansions.LogitechWrapper.Services
+﻿namespace Artemis.Plugins.Wrappers.Logitech.Services
 {
     internal enum HidCode
     {

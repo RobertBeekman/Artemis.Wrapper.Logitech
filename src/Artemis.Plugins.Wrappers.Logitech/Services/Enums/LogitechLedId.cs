@@ -1,4 +1,4 @@
-﻿namespace Artemis.DataModelExpansions.LogitechWrapper
+﻿namespace Artemis.Plugins.Wrappers.Logitech
 {
     internal enum LogitechLedId
     {

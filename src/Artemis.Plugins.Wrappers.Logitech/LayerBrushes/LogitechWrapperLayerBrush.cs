@@ -1,11 +1,11 @@
 ﻿using Artemis.Core;
 using Artemis.Core.LayerBrushes;
-using Artemis.DataModelExpansions.LogitechWrapper.Services;
+using Artemis.Plugins.Wrappers.Logitech.Services;
 using RGB.NET.Core;
 using SkiaSharp;
 using System.Collections.Generic;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.LayerBrushes
+namespace Artemis.Plugins.Wrappers.Logitech.LayerBrushes
 {
     public class LogitechWrapperLayerBrush : PerLedLayerBrush<LogitechWrapperLayerPropertyGroup>
     {

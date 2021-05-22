@@ -1,7 +1,7 @@
 ﻿using Artemis.Core.DataModelExpansions;
 using SkiaSharp;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.DataModelExpansion.DataModels
+namespace Artemis.Plugins.Wrappers.Logitech.DataModelExpansion.DataModels
 {
     public class LogitechWrapperDataModel : DataModel
     {

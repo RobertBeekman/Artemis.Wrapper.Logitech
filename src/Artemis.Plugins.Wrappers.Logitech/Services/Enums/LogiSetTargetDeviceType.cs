@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.Services
+namespace Artemis.Plugins.Wrappers.Logitech.Services
 {
 
     [Flags]

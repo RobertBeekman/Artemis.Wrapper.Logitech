@@ -1,6 +1,6 @@
 ﻿using Artemis.Core;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.LayerBrushes
+namespace Artemis.Plugins.Wrappers.Logitech.LayerBrushes
 {
     public class LogitechWrapperLayerPropertyGroup : LayerPropertyGroup
     {

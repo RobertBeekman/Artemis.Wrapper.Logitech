@@ -1,7 +1,7 @@
 ﻿using Artemis.Core;
-using Artemis.DataModelExpansions.LogitechWrapper.Prerequisites;
+using Artemis.Plugins.Wrappers.Logitech.Prerequisites;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper
+namespace Artemis.Plugins.Wrappers.Logitech
 {
     public class LogitechWrapperBootstrapper : PluginBootstrapper
     {
