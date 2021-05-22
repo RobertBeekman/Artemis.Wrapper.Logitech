@@ -163,6 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ArtemisPipeClient.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="DllHelper.h" />
     <ClInclude Include="fmt\chrono.h" />
@@ -177,6 +178,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ArtemisPipeClient.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="format.cc" />
     <ClCompile Include="OriginalDllWrapper.cpp" />

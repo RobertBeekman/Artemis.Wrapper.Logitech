@@ -64,7 +64,7 @@ namespace Artemis.DataModelExpansions.LogitechWrapper.Services
         public void Dispose()
         {
             _cancellationTokenSource.Cancel();
-            _listenerTask.Wait();
+            try { _listenerTask.Wait(); } catch { }//ignore
             _listenerTask.Dispose();
             _cancellationTokenSource.Dispose();
         }

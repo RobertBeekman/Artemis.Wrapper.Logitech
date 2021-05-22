@@ -51,6 +51,9 @@
     <ClInclude Include="OriginalDllWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ArtemisPipeClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -67,6 +70,9 @@
     </ClCompile>
     <ClCompile Include="Utils.h">
       <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ArtemisPipeClient.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

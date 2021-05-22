@@ -7,94 +7,15 @@
 #include "Logger.h"
 #include "Utils.h"
 #include "OriginalDllWrapper.h"
+#include "ArtemisPipeClient.h"
 #include <string>
 #include <vector>
 
 #pragma region Static variables
 static OriginalDllWrapper originalDllWrapper;
+static ArtemisPipeClient artemisPipeClient;
 static bool isInitialized = false;
-static bool isPipeConnected = false;
-static HANDLE artemisPipe = NULL;
 static std::string program_name = "";
-#pragma endregion
-
-#pragma region Pipe connection
-void ConnectToPipe() {
-	LOG("Connecting to pipe...");
-
-	artemisPipe = CreateFile(
-		PIPE_NAME,
-		GENERIC_WRITE,
-		0,
-		NULL,
-		OPEN_EXISTING,
-		0,
-		NULL);
-	isPipeConnected = artemisPipe != NULL && artemisPipe != INVALID_HANDLE_VALUE;
-
-	LOG(isPipeConnected ? "Connected to pipe successfully" : "Could not connect to pipe");
-}
-
-void ClosePipe() {
-	LOG("Closing pipe...");
-	CloseHandle(artemisPipe);
-	isPipeConnected = false;
-	LOG("Closed pipe");
-}
-
-void WriteToPipe(LPCVOID data, DWORD dataLength) {
-	if (originalDllWrapper.IsDllLoaded())
-		return;
-
-	if (!isPipeConnected) {
-		LOG("Pipe disconnected when writing, trying to reconnect...");
-		ConnectToPipe();
-		if (!isPipeConnected) {
-			return;
-		}
-		LOG("Pipe connection reestablished");
-	}
-
-	DWORD writtenLength;
-	BOOL result = WriteFile(
-		artemisPipe,
-		data,
-		dataLength,
-		&writtenLength,
-		NULL);
-
-	if ((!result) || (writtenLength < dataLength)) {
-		LOG(fmt::format("Error writing to pipe: \'{error}\'. Wrote {bytes} bytes out of {total}", result, writtenLength, dataLength));
-		ClosePipe();
-	}
-}
-
-void WriteStringToPipe(std::string data) {
-	LOG(fmt::format("Writing to pipe: \'{}\'", data));
-
-	const char* cData = data.c_str();
-	unsigned int cDataLength = (int)strlen(cData) + 1;
-
-	unsigned int logCommand = LogiCommands::LogLine;
-	unsigned int arraySize =
-		sizeof(unsigned int) + //length
-		sizeof(unsigned int) + //command
-		cDataLength;
-
-	std::vector<unsigned char> buff(arraySize, 0);
-	unsigned int buffPtr = 0;
-
-	memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
-	buffPtr += sizeof(arraySize);
-
-	memcpy(&buff[buffPtr], &logCommand, sizeof(logCommand));
-	buffPtr += sizeof(logCommand);
-
-	memcpy(&buff[buffPtr], cData, cDataLength);
-	buffPtr += cDataLength;
-
-	WriteToPipe(buff.data(), arraySize);
-}
 #pragma endregion
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
@@ -128,9 +49,9 @@ bool LogiLedInit()
 
 	LOG("LogiLedInit Called");
 	if (program_name != ARTEMIS_EXE_NAME) {
-		ConnectToPipe();
+		artemisPipeClient.Connect();
 
-		if (isPipeConnected) {
+		if (artemisPipeClient.IsConnected()) {
 			auto c_str = program_name.c_str();
 			unsigned int strLength = (int)strlen(c_str) + 1;
 			const unsigned int command = LogiCommands::Init;
@@ -151,7 +72,7 @@ bool LogiLedInit()
 			memcpy(&buff[buffPtr], c_str, strLength);
 			buffPtr += strLength;
 
-			WriteToPipe(buff.data(), arraySize);
+			artemisPipeClient.Write(buff.data(), arraySize);
 
 			isInitialized = true;
 			return true;
@@ -175,7 +96,7 @@ bool LogiLedInit()
 
 bool LogiLedInitWithName(const char name[])
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const char* c_str = name;
 		unsigned int strLength = (int)strlen(c_str) + 1;
 		const unsigned int command = LogiCommands::Init;
@@ -196,7 +117,7 @@ bool LogiLedInitWithName(const char name[])
 		memcpy(&buff[buffPtr], c_str, strLength);
 		buffPtr += strLength;
 
-		WriteToPipe(buff.data(), arraySize);
+		artemisPipeClient.Write(buff.data(), arraySize);
 
 		return true;
 	}
@@ -210,7 +131,7 @@ bool LogiLedInitWithName(const char name[])
 
 bool LogiLedSetTargetDevice(int targetDevice)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetTargetDevice;
 		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
@@ -228,7 +149,7 @@ bool LogiLedSetTargetDevice(int targetDevice)
 		memcpy(&buff[buffPtr], &targetDevice, sizeof(targetDevice));
 		buffPtr += sizeof(targetDevice);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 		return true;
 	}
 
@@ -241,7 +162,7 @@ bool LogiLedSetTargetDevice(int targetDevice)
 
 bool LogiLedSaveCurrentLighting()
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SaveCurrentLighting;
 		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
@@ -255,7 +176,7 @@ bool LogiLedSaveCurrentLighting()
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 		return true;
 	}
 	if (originalDllWrapper.IsDllLoaded()) {
@@ -266,7 +187,7 @@ bool LogiLedSaveCurrentLighting()
 
 bool LogiLedSetLighting(int redPercentage, int greenPercentage, int bluePercentage)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLighting;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
@@ -288,7 +209,7 @@ bool LogiLedSetLighting(int redPercentage, int greenPercentage, int bluePercenta
 		buff[buffPtr++] = (unsigned char)((double)greenPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)bluePercentage / 100.0 * 255.0);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 
 		return true;
 	}
@@ -300,7 +221,7 @@ bool LogiLedSetLighting(int redPercentage, int greenPercentage, int bluePercenta
 
 bool LogiLedRestoreLighting()
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::RestoreLighting;
 		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
@@ -314,7 +235,7 @@ bool LogiLedRestoreLighting()
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 		return true;
 	}
 	if (originalDllWrapper.IsDllLoaded()) {
@@ -325,7 +246,7 @@ bool LogiLedRestoreLighting()
 
 bool LogiLedFlashLighting(int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::FlashLighting;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
@@ -355,7 +276,7 @@ bool LogiLedFlashLighting(int redPercentage, int greenPercentage, int bluePercen
 		memcpy(&buff[buffPtr], &milliSecondsInterval, sizeof(milliSecondsInterval));
 		buffPtr += sizeof(milliSecondsInterval);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 
 		return true;
 	}
@@ -367,7 +288,7 @@ bool LogiLedFlashLighting(int redPercentage, int greenPercentage, int bluePercen
 
 bool LogiLedPulseLighting(int redPercentage, int greenPercentage, int bluePercentage, int milliSecondsDuration, int milliSecondsInterval)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::PulseLighting;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
@@ -397,7 +318,7 @@ bool LogiLedPulseLighting(int redPercentage, int greenPercentage, int bluePercen
 		memcpy(&buff[buffPtr], &milliSecondsInterval, sizeof(milliSecondsInterval));
 		buffPtr += sizeof(milliSecondsInterval);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 
 		return true;
 	}
@@ -409,7 +330,7 @@ bool LogiLedPulseLighting(int redPercentage, int greenPercentage, int bluePercen
 
 bool LogiLedStopEffects()
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::StopEffects;
 		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
@@ -423,7 +344,7 @@ bool LogiLedStopEffects()
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 		return true;
 	}
 	if (originalDllWrapper.IsDllLoaded()) {
@@ -434,7 +355,7 @@ bool LogiLedStopEffects()
 
 bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingFromBitmap;
 		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
@@ -453,7 +374,7 @@ bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 		memcpy(&buff[buffPtr], &bitmap[0], LOGI_LED_BITMAP_SIZE);
 		buffPtr += LOGI_LED_BITMAP_SIZE;
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 		return true;
 	}
 
@@ -465,7 +386,7 @@ bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 
 bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int greenPercentage, int bluePercentage)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingForKeyWithScanCode;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
@@ -491,7 +412,7 @@ bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int gr
 		memcpy(&buff[buffPtr], &keyCode, sizeof(keyCode));
 		buffPtr += sizeof(keyCode);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 
 		return true;
 	}
@@ -503,7 +424,7 @@ bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int gr
 
 bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int greenPercentage, int bluePercentage)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingForKeyWithHidCode;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
@@ -529,7 +450,7 @@ bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int gre
 		memcpy(&buff[buffPtr], &keyCode, sizeof(keyCode));
 		buffPtr += sizeof(keyCode);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 
 		return true;
 	}
@@ -541,7 +462,7 @@ bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int gre
 
 bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int greenPercentage, int bluePercentage)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingForKeyWithQuartzCode;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
@@ -567,7 +488,7 @@ bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int 
 		memcpy(&buff[buffPtr], &keyCode, sizeof(keyCode));
 		buffPtr += sizeof(keyCode);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 
 		return true;
 	}
@@ -579,7 +500,7 @@ bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int 
 
 bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingForKeyWithKeyName;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
@@ -605,7 +526,7 @@ bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercen
 		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
 		buffPtr += sizeof(keyName);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 
 		return true;
 	}
@@ -617,7 +538,7 @@ bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercen
 
 bool LogiLedSaveLightingForKey(LogiLed::KeyName keyName)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SaveLightingForKey;
 		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
@@ -635,7 +556,7 @@ bool LogiLedSaveLightingForKey(LogiLed::KeyName keyName)
 		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
 		buffPtr += sizeof(keyName);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 		return true;
 	}
 	if (originalDllWrapper.IsDllLoaded()) {
@@ -646,7 +567,7 @@ bool LogiLedSaveLightingForKey(LogiLed::KeyName keyName)
 
 bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::RestoreLightingForKey;
 		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
@@ -664,7 +585,7 @@ bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
 		buffPtr += sizeof(keyName);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 		return true;
 	}
 	if (originalDllWrapper.IsDllLoaded()) {
@@ -675,7 +596,7 @@ bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 
 bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage, int msDuration, int msInterval)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::FlashSingleKey;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
@@ -709,7 +630,7 @@ bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int gree
 		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
 		buffPtr += sizeof(keyName);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 
 		return true;
 	}
@@ -721,7 +642,7 @@ bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int gree
 
 bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int startGreenPercentage, int startBluePercentage, int finishRedPercentage, int finishGreenPercentage, int finishBluePercentage, int msDuration, bool isInfinite)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::PulseSingleKey;
 		const unsigned int arraySize =
 			sizeof(unsigned int) +  //length
@@ -762,7 +683,7 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
 		buffPtr += sizeof(keyName);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 
 		return true;
 	}
@@ -774,7 +695,7 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 
 bool LogiLedStopEffectsOnKey(LogiLed::KeyName keyName)
 {
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::StopEffectsOnKey;
 		const unsigned int arraySize =
 			sizeof(unsigned int) + //length
@@ -792,7 +713,7 @@ bool LogiLedStopEffectsOnKey(LogiLed::KeyName keyName)
 		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
 		buffPtr += sizeof(keyName);
 
-		WriteToPipe(buff, arraySize);
+		artemisPipeClient.Write(buff, arraySize);
 		return true;
 	}
 	if (originalDllWrapper.IsDllLoaded()) {
@@ -808,7 +729,7 @@ void LogiLedShutdown()
 
 	LOG("LogiLedShutdown called");
 
-	if (isPipeConnected) {
+	if (artemisPipeClient.IsConnected()) {
 		LOG("Informing artemis and closing pipe...");
 
 		const char* c_str = program_name.c_str();
@@ -831,9 +752,9 @@ void LogiLedShutdown()
 		memcpy(&buff[buffPtr], c_str, strLength);
 		buffPtr += strLength;
 
-		WriteToPipe(buff.data(), arraySize);
+		artemisPipeClient.Write(buff.data(), arraySize);
 
-		ClosePipe();
+		artemisPipeClient.Disconnect();
 	}
 
 	isInitialized = false;
