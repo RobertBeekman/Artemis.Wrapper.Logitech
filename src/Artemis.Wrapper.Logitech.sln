@@ -5,10 +5,7 @@ VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Artemis.Wrapper.Logitech", "Artemis.Wrapper.Logitech\Artemis.Wrapper.Logitech.vcxproj", "{17767078-9AEF-431E-8CD9-5896C9C3E44F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Artemis.DataModelExpansions.LogitechWrapper", "Artemis.DataModelExpansions.LogitechWrapper\Artemis.DataModelExpansions.LogitechWrapper.csproj", "{38E03C9F-25F6-44D4-B281-A1C920A88940}"
-	ProjectSection(ProjectDependencies) = postProject
-		{17767078-9AEF-431E-8CD9-5896C9C3E44F} = {17767078-9AEF-431E-8CD9-5896C9C3E44F}
-	EndProjectSection
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Artemis.Plugins.Wrappers.Logitech", "Artemis.Plugins.Wrappers.Logitech\Artemis.Plugins.Wrappers.Logitech.csproj", "{13C0645E-9A9D-47F9-BB46-AE5D3A7A6261}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,10 +17,10 @@ Global
 		{17767078-9AEF-431E-8CD9-5896C9C3E44F}.Debug|x64.Build.0 = Debug|x64
 		{17767078-9AEF-431E-8CD9-5896C9C3E44F}.Release|x64.ActiveCfg = Release|x64
 		{17767078-9AEF-431E-8CD9-5896C9C3E44F}.Release|x64.Build.0 = Release|x64
-		{38E03C9F-25F6-44D4-B281-A1C920A88940}.Debug|x64.ActiveCfg = Debug|x64
-		{38E03C9F-25F6-44D4-B281-A1C920A88940}.Debug|x64.Build.0 = Debug|x64
-		{38E03C9F-25F6-44D4-B281-A1C920A88940}.Release|x64.ActiveCfg = Release|x64
-		{38E03C9F-25F6-44D4-B281-A1C920A88940}.Release|x64.Build.0 = Release|x64
+		{13C0645E-9A9D-47F9-BB46-AE5D3A7A6261}.Debug|x64.ActiveCfg = Debug|x64
+		{13C0645E-9A9D-47F9-BB46-AE5D3A7A6261}.Debug|x64.Build.0 = Debug|x64
+		{13C0645E-9A9D-47F9-BB46-AE5D3A7A6261}.Release|x64.ActiveCfg = Release|x64
+		{13C0645E-9A9D-47F9-BB46-AE5D3A7A6261}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
