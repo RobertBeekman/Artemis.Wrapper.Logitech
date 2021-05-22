@@ -2,7 +2,6 @@
 
 namespace Artemis.DataModelExpansions.LogitechWrapper.LayerBrushes
 {
-
     public class LogitechWrapperLayerPropertyGroup : LayerPropertyGroup
     {
         protected override void DisableProperties()

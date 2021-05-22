@@ -1,5 +1,5 @@
 ﻿using Artemis.Core.DataModelExpansions;
-using Artemis.DataModelExpansions.LogitechWrapper.DataModels;
+using Artemis.DataModelExpansions.LogitechWrapper.DataModelExpansion.DataModels;
 using Artemis.DataModelExpansions.LogitechWrapper.Services;
 using RGB.NET.Core;
 using Serilog;
@@ -7,7 +7,7 @@ using SkiaSharp;
 using System;
 using System.Collections.Generic;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper
+namespace Artemis.DataModelExpansions.LogitechWrapper.DataModelExpansion
 {
     public class LogitechWrapperDataModelExpansion : DataModelExpansion<LogitechWrapperDataModel>
     {

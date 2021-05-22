@@ -1,13 +1,11 @@
 ﻿using Artemis.Core.DataModelExpansions;
 using SkiaSharp;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper.DataModels
+namespace Artemis.DataModelExpansions.LogitechWrapper.DataModelExpansion.DataModels
 {
     public class LogitechWrapperDataModel : DataModel
     {
         public SKColor BackgroundColor { get; set; }
-        public KeysDataModel Keys { get; set; } = new();
+        public LogitechKeysDataModel Keys { get; set; } = new();
     }
-
-    public class KeysDataModel : DataModel { }
 }

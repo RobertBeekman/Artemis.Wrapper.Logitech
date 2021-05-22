@@ -1,7 +1,6 @@
 ﻿using Artemis.Core.LayerBrushes;
-using Artemis.DataModelExpansions.LogitechWrapper.LayerBrushes;
 
-namespace Artemis.DataModelExpansions.LogitechWrapper
+namespace Artemis.DataModelExpansions.LogitechWrapper.LayerBrushes
 {
     public class LogitechWrapperLayerBrushProvider : LayerBrushProvider
     {
