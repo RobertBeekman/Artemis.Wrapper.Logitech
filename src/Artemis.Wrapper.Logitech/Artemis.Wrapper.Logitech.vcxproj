@@ -176,6 +176,7 @@
     <ClInclude Include="LogitechLEDLib.h" />
     <ClInclude Include="OriginalDllWrapper.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ArtemisPipeClient.cpp" />
@@ -192,6 +193,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Artemis.Wrapper.Logitech.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
