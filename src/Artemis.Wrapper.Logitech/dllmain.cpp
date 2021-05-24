@@ -42,6 +42,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 #pragma region Exports
 bool LogiLedInit()
 {
+	return LogiLedInitWithName(program_name.c_str());
+}
+
+bool LogiLedInitWithName(const char name[])
+{
 	if (isInitialized) {
 		LOG("Program tried to initialize twice, returning true");
 		return true;
@@ -52,13 +57,12 @@ bool LogiLedInit()
 		artemisPipeClient.Connect();
 
 		if (artemisPipeClient.IsConnected()) {
-			auto c_str = program_name.c_str();
-			unsigned int strLength = (int)strlen(c_str) + 1;
+			unsigned int nameLength = (int)strlen(name) + 1;
 			const unsigned int command = LogiCommands::Init;
 			const unsigned int arraySize =
 				sizeof(unsigned int) +  //length
 				sizeof(unsigned int) +  //command
-				strLength;              //str
+				nameLength;             //str
 
 			std::vector<unsigned char> buff(arraySize, 0);
 			unsigned int buffPtr = 0;
@@ -69,8 +73,8 @@ bool LogiLedInit()
 			memcpy(&buff[buffPtr], &command, sizeof(command));
 			buffPtr += sizeof(command);
 
-			memcpy(&buff[buffPtr], c_str, strLength);
-			buffPtr += strLength;
+			memcpy(&buff[buffPtr], name, nameLength);
+			buffPtr += nameLength;
 
 			artemisPipeClient.Write(buff.data(), arraySize);
 
@@ -91,41 +95,6 @@ bool LogiLedInit()
 		return originalDllWrapper.LogiLedInit();
 	}
 	isInitialized = false;
-	return false;
-}
-
-bool LogiLedInitWithName(const char name[])
-{
-	if (artemisPipeClient.IsConnected()) {
-		const char* c_str = name;
-		unsigned int strLength = (int)strlen(c_str) + 1;
-		const unsigned int command = LogiCommands::Init;
-		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
-			strLength;              //str
-
-		std::vector<unsigned char> buff(arraySize,  0);
-		unsigned int buffPtr = 0;
-
-		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
-		buffPtr += sizeof(arraySize);
-
-		memcpy(&buff[buffPtr], &command, sizeof(command));
-		buffPtr += sizeof(command);
-
-		memcpy(&buff[buffPtr], c_str, strLength);
-		buffPtr += strLength;
-
-		artemisPipeClient.Write(buff.data(), arraySize);
-
-		return true;
-	}
-
-	if (originalDllWrapper.IsDllLoaded()) {
-		return originalDllWrapper.LogiLedInitWithName(name);
-	}
-
 	return false;
 }
 
