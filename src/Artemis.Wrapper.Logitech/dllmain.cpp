@@ -1,5 +1,6 @@
 // dllmain.cpp : Defines the entry point for the DLL application.
 #pragma warning( disable : 6387 )
+#pragma warning( disable : 26812 )
 #include "pch.h"
 #include "LogitechLEDLib.h"
 #include "LogiCommands.h"
@@ -39,7 +40,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 	return TRUE;
 }
 
-#pragma region Exports
 bool LogiLedInit()
 {
 	return LogiLedInitWithName(program_name.c_str());
@@ -60,9 +60,9 @@ bool LogiLedInitWithName(const char name[])
 			unsigned int nameLength = (int)strlen(name) + 1;
 			const unsigned int command = LogiCommands::Init;
 			const unsigned int arraySize =
-				sizeof(unsigned int) +  //length
-				sizeof(unsigned int) +  //command
-				nameLength;             //str
+				sizeof(arraySize) +
+				sizeof(command) +
+				nameLength;
 
 			std::vector<unsigned char> buff(arraySize, 0);
 			unsigned int buffPtr = 0;
@@ -98,14 +98,15 @@ bool LogiLedInitWithName(const char name[])
 	return false;
 }
 
+
 bool LogiLedSetTargetDevice(int targetDevice)
 {
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetTargetDevice;
 		const unsigned int arraySize =
-			sizeof(unsigned int) + //length
-			sizeof(unsigned int) + //command
-			sizeof(int);           //argument
+			sizeof(arraySize) +
+			sizeof(command) +
+			sizeof(targetDevice);
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
@@ -134,8 +135,8 @@ bool LogiLedSaveCurrentLighting()
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SaveCurrentLighting;
 		const unsigned int arraySize =
-			sizeof(unsigned int) + //length
-			sizeof(unsigned int);  //command
+			sizeof(arraySize) +
+			sizeof(command);
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
@@ -159,8 +160,8 @@ bool LogiLedSetLighting(int redPercentage, int greenPercentage, int bluePercenta
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLighting;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
+			sizeof(arraySize) +
+			sizeof(command) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
 			sizeof(unsigned char);  //b
@@ -193,8 +194,8 @@ bool LogiLedRestoreLighting()
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::RestoreLighting;
 		const unsigned int arraySize =
-			sizeof(unsigned int) + //length
-			sizeof(unsigned int);  //command
+			sizeof(arraySize) +
+			sizeof(command);
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
@@ -218,13 +219,13 @@ bool LogiLedFlashLighting(int redPercentage, int greenPercentage, int bluePercen
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::FlashLighting;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
+			sizeof(arraySize) +
+			sizeof(command) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
 			sizeof(unsigned char) + //b
-			sizeof(int) + //duration
-			sizeof(int); //interval
+			sizeof(milliSecondsDuration) +
+			sizeof(milliSecondsInterval);
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -238,7 +239,7 @@ bool LogiLedFlashLighting(int redPercentage, int greenPercentage, int bluePercen
 		buff[buffPtr++] = (unsigned char)((double)redPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)greenPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)bluePercentage / 100.0 * 255.0);
-		
+
 		memcpy(&buff[buffPtr], &milliSecondsDuration, sizeof(milliSecondsDuration));
 		buffPtr += sizeof(milliSecondsDuration);
 
@@ -260,13 +261,13 @@ bool LogiLedPulseLighting(int redPercentage, int greenPercentage, int bluePercen
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::PulseLighting;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
+			sizeof(arraySize) +
+			sizeof(command) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
 			sizeof(unsigned char) + //b
-			sizeof(int) + //duration
-			sizeof(int); //interval
+			sizeof(milliSecondsDuration) +
+			sizeof(milliSecondsInterval);
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -302,8 +303,8 @@ bool LogiLedStopEffects()
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::StopEffects;
 		const unsigned int arraySize =
-			sizeof(unsigned int) + //length
-			sizeof(unsigned int);  //command
+			sizeof(arraySize) +
+			sizeof(command);
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
@@ -322,13 +323,14 @@ bool LogiLedStopEffects()
 	return false;
 }
 
+
 bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 {
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingFromBitmap;
 		const unsigned int arraySize =
-			sizeof(unsigned int) + //length
-			sizeof(unsigned int) + //command
+			sizeof(arraySize) +
+			sizeof(command) +
 			LOGI_LED_BITMAP_SIZE;
 
 		unsigned char buff[arraySize] = { 0 };
@@ -340,7 +342,7 @@ bool LogiLedSetLightingFromBitmap(unsigned char bitmap[])
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		memcpy(&buff[buffPtr], &bitmap[0], LOGI_LED_BITMAP_SIZE);
+		memcpy(&buff[buffPtr], bitmap, LOGI_LED_BITMAP_SIZE);
 		buffPtr += LOGI_LED_BITMAP_SIZE;
 
 		artemisPipeClient.Write(buff, arraySize);
@@ -358,12 +360,12 @@ bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int gr
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingForKeyWithScanCode;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
+			sizeof(arraySize) +
+			sizeof(command) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
 			sizeof(unsigned char) + //b
-			sizeof(int); //key
+			sizeof(keyCode);
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -396,12 +398,12 @@ bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int gre
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingForKeyWithHidCode;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
+			sizeof(arraySize) +
+			sizeof(command) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
 			sizeof(unsigned char) + //b
-			sizeof(int); //key
+			sizeof(keyCode); //key
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -434,12 +436,12 @@ bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int 
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingForKeyWithQuartzCode;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
+			sizeof(arraySize) +
+			sizeof(command) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
 			sizeof(unsigned char) + //b
-			sizeof(int); //key
+			sizeof(keyCode);
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -472,12 +474,12 @@ bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercen
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SetLightingForKeyWithKeyName;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
-			sizeof(unsigned char) + //r
-			sizeof(unsigned char) + //g
-			sizeof(unsigned char) + //b
-			sizeof(int); //keyName
+			sizeof(arraySize) +
+			sizeof(command) +
+			sizeof(unsigned char) +  //r
+			sizeof(unsigned char) +  //g
+			sizeof(unsigned char) +  //b
+			sizeof(LogiLed::KeyName);
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -510,9 +512,9 @@ bool LogiLedSaveLightingForKey(LogiLed::KeyName keyName)
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::SaveLightingForKey;
 		const unsigned int arraySize =
-			sizeof(unsigned int) + //length
-			sizeof(unsigned int) + //command
-			sizeof(int);           //keyName
+			sizeof(arraySize) +
+			sizeof(command) +
+			sizeof(LogiLed::KeyName);
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
@@ -539,9 +541,9 @@ bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::RestoreLightingForKey;
 		const unsigned int arraySize =
-			sizeof(unsigned int) + //length
-			sizeof(unsigned int) + //command
-			sizeof(int);           //keyName
+			sizeof(arraySize) +
+			sizeof(command) +
+			sizeof(LogiLed::KeyName);
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
@@ -563,19 +565,50 @@ bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 	return false;
 }
 
+bool LogiLedExcludeKeysFromBitmap(LogiLed::KeyName* keyList, int listCount)
+{
+	if (artemisPipeClient.IsConnected()) {
+		const unsigned int command = LogiCommands::ExcludeKeysFromBitmap;
+		const unsigned int arraySize =
+			sizeof(arraySize) +
+			sizeof(command) +
+			sizeof(LogiLed::KeyName) * listCount;
+
+		std::vector<unsigned char> buff(arraySize, 0);
+		unsigned int buffPtr = 0;
+
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
+
+		memcpy(&buff[buffPtr], &command, sizeof(command));
+		buffPtr += sizeof(command);
+
+		memcpy(&buff[buffPtr], keyList, sizeof(int) * listCount);
+		buffPtr += sizeof(int) * listCount;
+
+		artemisPipeClient.Write(buff.data(), arraySize);
+		return true;
+	}
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedExcludeKeysFromBitmap(keyList, listCount);
+	}
+	return false;
+}
+
+
 bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int greenPercentage, int bluePercentage, int msDuration, int msInterval)
 {
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::FlashSingleKey;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
+			sizeof(arraySize) +
+			sizeof(command) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
 			sizeof(unsigned char) + //b
-			sizeof(int) + //duration
-			sizeof(int) + //interval
-			sizeof(int); //keyName
+			sizeof(msDuration) +
+			sizeof(msInterval) +
+			sizeof(LogiLed::KeyName);
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -614,17 +647,17 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::PulseSingleKey;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
+			sizeof(arraySize) +
+			sizeof(command) +
 			sizeof(unsigned char) + //r start
 			sizeof(unsigned char) + //g start
 			sizeof(unsigned char) + //b start
 			sizeof(unsigned char) + //r end
 			sizeof(unsigned char) + //g end
 			sizeof(unsigned char) + //b end
-			sizeof(int) + //duration
-			sizeof(bool) + //infinite
-			sizeof(int); //keyName
+			sizeof(msDuration) +
+			sizeof(isInfinite) +
+			sizeof(LogiLed::KeyName);
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -667,9 +700,9 @@ bool LogiLedStopEffectsOnKey(LogiLed::KeyName keyName)
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::StopEffectsOnKey;
 		const unsigned int arraySize =
-			sizeof(unsigned int) + //length
-			sizeof(unsigned int) + //command
-			sizeof(int);           //keyName
+			sizeof(arraySize) +
+			sizeof(command) +
+			sizeof(LogiLed::KeyName);
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
 
@@ -691,6 +724,50 @@ bool LogiLedStopEffectsOnKey(LogiLed::KeyName keyName)
 	return false;
 }
 
+
+bool LogiLedSetLightingForTargetZone(LogiLed::DeviceType deviceType, int zone, int redPercentage, int greenPercentage, int bluePercentage)
+{
+	if (artemisPipeClient.IsConnected()) {
+		const unsigned int command = LogiCommands::FlashSingleKey;
+		const unsigned int arraySize =
+			sizeof(arraySize) +
+			sizeof(command) +
+			sizeof(LogiLed::KeyName) +
+			sizeof(zone) +
+			sizeof(unsigned char) + //r
+			sizeof(unsigned char) + //g
+			sizeof(unsigned char);  //b
+
+		unsigned char buff[arraySize] = { 0 };
+		unsigned int buffPtr = 0;
+
+		memcpy(&buff[buffPtr], &arraySize, sizeof(arraySize));
+		buffPtr += sizeof(arraySize);
+
+		memcpy(&buff[buffPtr], &command, sizeof(command));
+		buffPtr += sizeof(command);
+
+		memcpy(&buff[buffPtr], &deviceType, sizeof(deviceType));
+		buffPtr += sizeof(deviceType);
+
+		memcpy(&buff[buffPtr], &zone, sizeof(zone));
+		buffPtr += sizeof(zone);
+
+		buff[buffPtr++] = (unsigned char)((double)redPercentage / 100.0 * 255.0);
+		buff[buffPtr++] = (unsigned char)((double)greenPercentage / 100.0 * 255.0);
+		buff[buffPtr++] = (unsigned char)((double)bluePercentage / 100.0 * 255.0);
+
+		artemisPipeClient.Write(buff, arraySize);
+
+		return true;
+	}
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedSetLightingForTargetZone(deviceType, zone, redPercentage, greenPercentage, bluePercentage);
+	}
+	return false;
+}
+
+
 void LogiLedShutdown()
 {
 	if (!isInitialized)
@@ -705,9 +782,9 @@ void LogiLedShutdown()
 		unsigned int strLength = (int)strlen(c_str) + 1;
 		const unsigned int command = LogiCommands::Shutdown;
 		const unsigned int arraySize =
-			sizeof(unsigned int) +  //length
-			sizeof(unsigned int) +  //command
-			strLength;              //str
+			sizeof(arraySize) +
+			sizeof(command) +
+			strLength;
 
 		std::vector<unsigned char> buff(arraySize, 0);
 		unsigned int buffPtr = 0;
@@ -729,4 +806,3 @@ void LogiLedShutdown()
 	isInitialized = false;
 	return;
 }
-#pragma endregion
