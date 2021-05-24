@@ -113,7 +113,7 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
                         _logger.Verbose("SetTargetDevice: {deviceType} ", DeviceType);
                         break;
                     case LogitechCommand.SetLighting:
-                        SKColor color = new(span[0], span[1], span[2]);
+                        SKColor color = FromSpan(span);
                         if (DeviceType == LogiSetTargetDeviceType.LOGI_DEVICETYPE_PERKEY_RGB)
                         {
                             foreach (LedId key in _colors.Keys)
@@ -130,8 +130,8 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
                         BitmapChanged?.Invoke(this, EventArgs.Empty);
                         break;
                     case LogitechCommand.SetLightingForKeyWithKeyName:
-                        SKColor color2 = new(span[0], span[1], span[2]);
-                        int keyNameIdx = BitConverter.ToInt32(span[3..]);
+                        int keyNameIdx = BitConverter.ToInt32(span);
+                        SKColor color2 = FromSpan(span[4..]);
                         LogitechLedId keyName = (LogitechLedId)keyNameIdx;
 
                         if (LedMapping.LogitechLedIds.TryGetValue(keyName, out LedId idx))
@@ -143,8 +143,8 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
                         BitmapChanged?.Invoke(this, EventArgs.Empty);
                         break;
                     case LogitechCommand.SetLightingForKeyWithScanCode:
-                        SKColor color3 = new SKColor(span[0], span[1], span[2]);
-                        int scanCodeIdx = BitConverter.ToInt32(span[3..]);
+                        int scanCodeIdx = BitConverter.ToInt32(span);
+                        SKColor color3 = FromSpan(span[4..]);
                         DirectInputScanCode scanCode = (DirectInputScanCode)scanCodeIdx;
 
                         if (LedMapping.DirectInputScanCodes.TryGetValue(scanCode, out LedId idx2))
@@ -156,8 +156,8 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
                         BitmapChanged?.Invoke(this, EventArgs.Empty);
                         break;
                     case LogitechCommand.SetLightingForKeyWithHidCode:
-                        SKColor color4 = new SKColor(span[0], span[1], span[2]);
-                        int hidCodeIdx = BitConverter.ToInt32(span[3..]);
+                        int hidCodeIdx = BitConverter.ToInt32(span);
+                        SKColor color4 = FromSpan(span[4..]);
                         HidCode hidCode = (HidCode)hidCodeIdx;
 
                         if (LedMapping.HidCodes.TryGetValue(hidCode, out LedId idx3))
@@ -182,18 +182,15 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
 
                         BitmapChanged?.Invoke(this, EventArgs.Empty);
                         break;
-                    case LogitechCommand.SaveCurrentLighting:
-                        //ignore?
-                        break;
-                    case LogitechCommand.RestoreLighting:
-                        //ignore?
-                        break;
                     default:
                         _logger.Information("Unknown command id: {commandId}.", e.Command);
                         break;
                 }
             }
         }
+
+        public static SKColor FromSpan(ReadOnlySpan<byte> span)
+            => new(span[0], span[1], span[2]);
 
         public void Dispose()
         {

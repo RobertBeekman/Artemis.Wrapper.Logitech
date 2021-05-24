@@ -2,7 +2,7 @@
 
 namespace Artemis.Plugins.Wrappers.Logitech.Services
 {
-    internal class WrapperPacket
+    internal struct WrapperPacket
     {
         public LogitechCommand Command { get; init; }
         public Memory<byte> Packet { get; init; }

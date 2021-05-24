@@ -362,10 +362,10 @@ bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int gr
 		const unsigned int arraySize =
 			sizeof(arraySize) +
 			sizeof(command) +
+			sizeof(keyCode) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
-			sizeof(unsigned char) + //b
-			sizeof(keyCode);
+			sizeof(unsigned char);  //b
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -376,12 +376,12 @@ bool LogiLedSetLightingForKeyWithScanCode(int keyCode, int redPercentage, int gr
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
+		memcpy(&buff[buffPtr], &keyCode, sizeof(keyCode));
+		buffPtr += sizeof(keyCode);
+
 		buff[buffPtr++] = (unsigned char)((double)redPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)greenPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)bluePercentage / 100.0 * 255.0);
-
-		memcpy(&buff[buffPtr], &keyCode, sizeof(keyCode));
-		buffPtr += sizeof(keyCode);
 
 		artemisPipeClient.Write(buff, arraySize);
 
@@ -400,10 +400,10 @@ bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int gre
 		const unsigned int arraySize =
 			sizeof(arraySize) +
 			sizeof(command) +
+			sizeof(keyCode) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
-			sizeof(unsigned char) + //b
-			sizeof(keyCode); //key
+			sizeof(unsigned char);  //b
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -414,12 +414,12 @@ bool LogiLedSetLightingForKeyWithHidCode(int keyCode, int redPercentage, int gre
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
+		memcpy(&buff[buffPtr], &keyCode, sizeof(keyCode));
+		buffPtr += sizeof(keyCode);
+
 		buff[buffPtr++] = (unsigned char)((double)redPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)greenPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)bluePercentage / 100.0 * 255.0);
-
-		memcpy(&buff[buffPtr], &keyCode, sizeof(keyCode));
-		buffPtr += sizeof(keyCode);
 
 		artemisPipeClient.Write(buff, arraySize);
 
@@ -438,10 +438,10 @@ bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int 
 		const unsigned int arraySize =
 			sizeof(arraySize) +
 			sizeof(command) +
+			sizeof(keyCode) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
-			sizeof(unsigned char) + //b
-			sizeof(keyCode);
+			sizeof(unsigned char);  //b
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -452,12 +452,12 @@ bool LogiLedSetLightingForKeyWithQuartzCode(int keyCode, int redPercentage, int 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
+		memcpy(&buff[buffPtr], &keyCode, sizeof(keyCode));
+		buffPtr += sizeof(keyCode);
+
 		buff[buffPtr++] = (unsigned char)((double)redPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)greenPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)bluePercentage / 100.0 * 255.0);
-
-		memcpy(&buff[buffPtr], &keyCode, sizeof(keyCode));
-		buffPtr += sizeof(keyCode);
 
 		artemisPipeClient.Write(buff, arraySize);
 
@@ -476,10 +476,10 @@ bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercen
 		const unsigned int arraySize =
 			sizeof(arraySize) +
 			sizeof(command) +
-			sizeof(unsigned char) +  //r
-			sizeof(unsigned char) +  //g
-			sizeof(unsigned char) +  //b
-			sizeof(LogiLed::KeyName);
+			sizeof(LogiLed::KeyName) +
+			sizeof(unsigned char) + //r
+			sizeof(unsigned char) + //g
+			sizeof(unsigned char);  //b
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -490,12 +490,12 @@ bool LogiLedSetLightingForKeyWithKeyName(LogiLed::KeyName keyName, int redPercen
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
+		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
+		buffPtr += sizeof(keyName);
+
 		buff[buffPtr++] = (unsigned char)((double)redPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)greenPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)bluePercentage / 100.0 * 255.0);
-
-		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
-		buffPtr += sizeof(keyName);
 
 		artemisPipeClient.Write(buff, arraySize);
 
@@ -603,12 +603,12 @@ bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int gree
 		const unsigned int arraySize =
 			sizeof(arraySize) +
 			sizeof(command) +
+			sizeof(LogiLed::KeyName) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
 			sizeof(unsigned char) + //b
 			sizeof(msDuration) +
-			sizeof(msInterval) +
-			sizeof(LogiLed::KeyName);
+			sizeof(msInterval);
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -619,6 +619,9 @@ bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int gree
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
+		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
+		buffPtr += sizeof(keyName);
+
 		buff[buffPtr++] = (unsigned char)((double)redPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)greenPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)bluePercentage / 100.0 * 255.0);
@@ -628,9 +631,6 @@ bool LogiLedFlashSingleKey(LogiLed::KeyName keyName, int redPercentage, int gree
 
 		memcpy(&buff[buffPtr], &msInterval, sizeof(msInterval));
 		buffPtr += sizeof(msInterval);
-
-		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
-		buffPtr += sizeof(keyName);
 
 		artemisPipeClient.Write(buff, arraySize);
 
@@ -649,6 +649,7 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 		const unsigned int arraySize =
 			sizeof(arraySize) +
 			sizeof(command) +
+			sizeof(LogiLed::KeyName) +
 			sizeof(unsigned char) + //r start
 			sizeof(unsigned char) + //g start
 			sizeof(unsigned char) + //b start
@@ -656,8 +657,7 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 			sizeof(unsigned char) + //g end
 			sizeof(unsigned char) + //b end
 			sizeof(msDuration) +
-			sizeof(isInfinite) +
-			sizeof(LogiLed::KeyName);
+			sizeof(isInfinite);
 
 		unsigned char buff[arraySize] = { 0 };
 		unsigned int buffPtr = 0;
@@ -667,6 +667,9 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
+
+		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
+		buffPtr += sizeof(keyName);
 
 		buff[buffPtr++] = (unsigned char)((double)startRedPercentage / 100.0 * 255.0);
 		buff[buffPtr++] = (unsigned char)((double)startGreenPercentage / 100.0 * 255.0);
@@ -681,9 +684,6 @@ bool LogiLedPulseSingleKey(LogiLed::KeyName keyName, int startRedPercentage, int
 
 		memcpy(&buff[buffPtr], &isInfinite, sizeof(isInfinite));
 		buffPtr += sizeof(isInfinite);
-
-		memcpy(&buff[buffPtr], &keyName, sizeof(keyName));
-		buffPtr += sizeof(keyName);
 
 		artemisPipeClient.Write(buff, arraySize);
 
@@ -732,7 +732,7 @@ bool LogiLedSetLightingForTargetZone(LogiLed::DeviceType deviceType, int zone, i
 		const unsigned int arraySize =
 			sizeof(arraySize) +
 			sizeof(command) +
-			sizeof(LogiLed::KeyName) +
+			sizeof(LogiLed::DeviceType) +
 			sizeof(zone) +
 			sizeof(unsigned char) + //r
 			sizeof(unsigned char) + //g
