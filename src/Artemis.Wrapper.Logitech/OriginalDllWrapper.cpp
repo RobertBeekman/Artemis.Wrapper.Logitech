@@ -29,7 +29,7 @@ void OriginalDllWrapper::LoadDll() {
 
 	LOG(fmt::format("Queried registry name \'{}\' and got value \'{}\'", utf8_encode(ARTEMIS_REG_NAME), utf8_encode(buffer)));
 	if (GetFileAttributesW(buffer) == INVALID_FILE_ATTRIBUTES) {
-		LOG(fmt::format("Dll file \'{path}\' does not exist. Failed to load original dll.", utf8_encode(buffer)));
+		LOG(fmt::format("Dll file \'{}\' does not exist. Failed to load original dll.", utf8_encode(buffer)));
 		return;
 	}
 

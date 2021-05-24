@@ -72,22 +72,22 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(ProjectDir)..\Artemis.DataModelExpansions.LogitechWrapper\x86\</OutDir>
+    <OutDir>$(ProjectDir)..\Artemis.Plugins.Wrappers.Logitech\x86\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ProjectDir)..\Artemis.DataModelExpansions.LogitechWrapper\x86\</OutDir>
+    <OutDir>$(ProjectDir)..\Artemis.Plugins.Wrappers.Logitech\x86\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(ProjectDir)..\Artemis.DataModelExpansions.LogitechWrapper\x64\</OutDir>
+    <OutDir>$(ProjectDir)..\Artemis.Plugins.Wrappers.Logitech\x64\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(ProjectDir)..\Artemis.DataModelExpansions.LogitechWrapper\x64\</OutDir>
+    <OutDir>$(ProjectDir)..\Artemis.Plugins.Wrappers.Logitech\x64\</OutDir>
     <IntDir>$(ProjectDir)obj\$(Platform)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
