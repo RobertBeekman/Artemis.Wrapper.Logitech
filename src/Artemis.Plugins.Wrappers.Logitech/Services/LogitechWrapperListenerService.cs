@@ -95,118 +95,137 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
                 ReadOnlySpan<byte> span = e.Packet.Span;
                 switch (e.Command)
                 {
-                    case LogitechCommand.Init:
-                        _logger.Information("LogiLedInit: {name}", Encoding.UTF8.GetString(span));
-                        break;
-                    case LogitechCommand.Shutdown:
-                        _logger.Information("LogiLedShutdown: {name}", Encoding.UTF8.GetString(span));
-                        foreach (LedId key in _colors.Keys)
-                        {
-                            _colors[key] = SKColors.Empty;
-                        }
-                        _excluded.Clear();
-                        DeviceType = LogiSetTargetDeviceType.All;
-                        BackgroundColor = SKColors.Empty;
-                        BitmapChanged?.Invoke(this, EventArgs.Empty);
-                        break;
-                    case LogitechCommand.LogLine:
-                        _logger.Information("LogLine: {data}", Encoding.UTF8.GetString(span));
-                        break;
-                    case LogitechCommand.SetTargetDevice:
-                        DeviceType = (LogiSetTargetDeviceType)BitConverter.ToInt32(span);
-                        _logger.Verbose("SetTargetDevice: {deviceType} ", DeviceType);
-                        break;
-                    case LogitechCommand.SetLighting:
-                        SKColor color = FromSpan(span);
-                        if (DeviceType == LogiSetTargetDeviceType.PerKeyRgb)
-                        {
-                            foreach (LedId key in _colors.Keys)
-                            {
-                                _colors[key] = color;
-                            }
-                        }
-                        else
-                        {
-                            BackgroundColor = color;
-                        }
-
-                        _logger.Verbose("SetLighting: {color}", color);
-                        BitmapChanged?.Invoke(this, EventArgs.Empty);
-                        break;
-                    case LogitechCommand.SetLightingForKeyWithKeyName:
-                        int keyNameIdx = BitConverter.ToInt32(span);
-                        SKColor color2 = FromSpan(span[4..]);
-                        LogitechLedId keyName = (LogitechLedId)keyNameIdx;
-
-                        if (LedMapping.LogitechLedIds.TryGetValue(keyName, out LedId idx))
-                        {
-                            _colors[idx] = color2;
-                        }
-
-                        _logger.Verbose("SetLightingForKeyWithKeyName: {keyName} ({keyNameIdx}) - {color}", keyName, keyNameIdx, color2);
-                        BitmapChanged?.Invoke(this, EventArgs.Empty);
-                        break;
-                    case LogitechCommand.SetLightingForKeyWithScanCode:
-                        int scanCodeIdx = BitConverter.ToInt32(span);
-                        SKColor color3 = FromSpan(span[4..]);
-                        DirectInputScanCode scanCode = (DirectInputScanCode)scanCodeIdx;
-
-                        if (LedMapping.DirectInputScanCodes.TryGetValue(scanCode, out LedId idx2))
-                        {
-                            _colors[idx2] = color3;
-                        }
-
-                        _logger.Verbose("SetLightingForKeyWithScanCode: {scanCode} ({scanCodeIdx}) - {color}", scanCode, scanCodeIdx, color3);
-                        BitmapChanged?.Invoke(this, EventArgs.Empty);
-                        break;
-                    case LogitechCommand.SetLightingForKeyWithHidCode:
-                        int hidCodeIdx = BitConverter.ToInt32(span);
-                        SKColor color4 = FromSpan(span[4..]);
-                        HidCode hidCode = (HidCode)hidCodeIdx;
-
-                        if (LedMapping.HidCodes.TryGetValue(hidCode, out LedId idx3))
-                        {
-                            _colors[idx3] = color4;
-                        }
-
-                        _logger.Verbose("SetLightingForKeyWithHidCode: {hidCode} ({hidCodeIdx}) - {color}", hidCode, hidCodeIdx, color4);
-                        BitmapChanged?.Invoke(this, EventArgs.Empty);
-                        break;
-                    case LogitechCommand.SetLightingFromBitmap:
-                        for (int i = 0; i < LOGI_LED_BITMAP_SIZE; i += 4)
-                        {
-                            ReadOnlySpan<byte> colorBuff = span.Slice(i, 4);
-                            if (LedMapping.BitmapMap.TryGetValue(i, out LedId l) && !_excluded.Contains(l))
-                            {
-                                //BGRA
-                                _colors[l] = new SKColor(colorBuff[2], colorBuff[1], colorBuff[0], colorBuff[3]);
-                            }
-                        }
-                        _logger.Verbose("SetLightingFromBitmap");
-
-                        BitmapChanged?.Invoke(this, EventArgs.Empty);
-                        break;
-                    case LogitechCommand.ExcludeKeysFromBitmap:
-                        var excludeCount = BitConverter.ToInt32(span);
-                        for (int i = 0; i < excludeCount; i++)
-                        {
-                            var excludedLogitechLedId = (LogitechLedId)BitConverter.ToInt32(span[(4 + (i * 4))..]);
-                            if (!LedMapping.LogitechLedIds.TryGetValue(excludedLogitechLedId, out var excludedLedId))
-                                continue;
-
-                            if (!_excluded.Contains(excludedLedId))
-                                _excluded.Add(excludedLedId);
-                        }
-                        break;
-                    default:
-                        _logger.Information("Unknown command id: {commandId}.", e.Command);
-                        break;
+                    case LogitechCommand.Init: Init(span); break;
+                    case LogitechCommand.Shutdown: Shutdown(span); break;
+                    case LogitechCommand.SetTargetDevice: SetTargetDevice(span); break;
+                    case LogitechCommand.SetLighting: SetLighting(span); break;
+                    case LogitechCommand.SetLightingForKeyWithKeyName: SetLightingForKeyWithKeyName(span); break;
+                    case LogitechCommand.SetLightingForKeyWithScanCode: SetLightingForKeyWithScanCode(span); break;
+                    case LogitechCommand.SetLightingForKeyWithHidCode: SetLightingForKeyWithHidCode(span); break;
+                    case LogitechCommand.SetLightingFromBitmap: SetLightingFromBitmap(span); break;
+                    case LogitechCommand.ExcludeKeysFromBitmap: ExcludeKeysFromBitmap(span); break;
+                    default: _logger.Information("Unknown command id: {commandId}.", e.Command); break;
                 }
             }
         }
 
+        private void Init(ReadOnlySpan<byte> span)
+        {
+            _logger.Information("LogiLedInit: {name}", Encoding.UTF8.GetString(span));
+        }
+
+        private void Shutdown(ReadOnlySpan<byte> span)
+        {
+            _logger.Information("LogiLedShutdown: {name}", Encoding.UTF8.GetString(span));
+            _excluded.Clear();
+            _colors.Clear();
+            DeviceType = LogiSetTargetDeviceType.All;
+            BackgroundColor = SKColors.Empty;
+            BitmapChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SetTargetDevice(ReadOnlySpan<byte> span)
+        {
+            DeviceType = (LogiSetTargetDeviceType)BitConverter.ToInt32(span);
+            _logger.Verbose("SetTargetDevice: {deviceType} ", DeviceType);
+        }
+
+        private void SetLighting(ReadOnlySpan<byte> span)
+        {
+            SKColor color = FromSpan(span);
+            if (DeviceType == LogiSetTargetDeviceType.PerKeyRgb)
+            {
+                foreach (LedId key in _colors.Keys)
+                {
+                    _colors[key] = color;
+                }
+            }
+            else
+            {
+                BackgroundColor = color;
+            }
+
+            _logger.Verbose("SetLighting: {color}", color);
+            BitmapChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SetLightingForKeyWithKeyName(ReadOnlySpan<byte> span)
+        {
+            int keyNameIdx = BitConverter.ToInt32(span);
+            SKColor color2 = FromSpan(span[4..]);
+            LogitechLedId keyName = (LogitechLedId)keyNameIdx;
+
+            if (LedMapping.LogitechLedIds.TryGetValue(keyName, out LedId idx))
+            {
+                _colors[idx] = color2;
+            }
+
+            _logger.Verbose("SetLightingForKeyWithKeyName: {keyName} ({keyNameIdx}) - {color}", keyName, keyNameIdx, color2);
+            BitmapChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SetLightingForKeyWithScanCode(ReadOnlySpan<byte> span)
+        {
+            int scanCodeIdx = BitConverter.ToInt32(span);
+            SKColor color3 = FromSpan(span[4..]);
+            DirectInputScanCode scanCode = (DirectInputScanCode)scanCodeIdx;
+
+            if (LedMapping.DirectInputScanCodes.TryGetValue(scanCode, out LedId idx2))
+            {
+                _colors[idx2] = color3;
+            }
+
+            _logger.Verbose("SetLightingForKeyWithScanCode: {scanCode} ({scanCodeIdx}) - {color}", scanCode, scanCodeIdx, color3);
+            BitmapChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SetLightingForKeyWithHidCode(ReadOnlySpan<byte> span)
+        {
+            int hidCodeIdx = BitConverter.ToInt32(span);
+            SKColor color4 = FromSpan(span[4..]);
+            HidCode hidCode = (HidCode)hidCodeIdx;
+
+            if (LedMapping.HidCodes.TryGetValue(hidCode, out LedId idx3))
+            {
+                _colors[idx3] = color4;
+            }
+
+            _logger.Verbose("SetLightingForKeyWithHidCode: {hidCode} ({hidCodeIdx}) - {color}", hidCode, hidCodeIdx, color4);
+            BitmapChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SetLightingFromBitmap(ReadOnlySpan<byte> span)
+        {
+            for (int i = 0; i < LOGI_LED_BITMAP_SIZE; i += 4)
+            {
+                ReadOnlySpan<byte> colorBuff = span.Slice(i, 4);
+                if (LedMapping.BitmapMap.TryGetValue(i, out LedId l) && !_excluded.Contains(l))
+                {
+                    //BGRA
+                    _colors[l] = new SKColor(colorBuff[2], colorBuff[1], colorBuff[0], colorBuff[3]);
+                }
+            }
+            _logger.Verbose("SetLightingFromBitmap");
+
+            BitmapChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void ExcludeKeysFromBitmap(ReadOnlySpan<byte> span)
+        {
+            var excludeCount = BitConverter.ToInt32(span);
+            for (int i = 0; i < excludeCount; i++)
+            {
+                var excludedLogitechLedId = (LogitechLedId)BitConverter.ToInt32(span[(4 + (i * 4))..]);
+                if (!LedMapping.LogitechLedIds.TryGetValue(excludedLogitechLedId, out var excludedLedId))
+                    continue;
+
+                if (!_excluded.Contains(excludedLedId))
+                    _excluded.Add(excludedLedId);
+            }
+        }
+
         public static SKColor FromSpan(ReadOnlySpan<byte> span)
-            => new(span[0], span[1], span[2]);
+                                => new(span[0], span[1], span[2]);
 
         public void Dispose()
         {

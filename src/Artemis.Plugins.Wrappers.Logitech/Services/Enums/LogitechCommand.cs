@@ -2,8 +2,7 @@
 {
     internal enum LogitechCommand
     {
-        LogLine = 0,
-        Init,
+        Init = 1,
         InitWithName,
         GetSdkVersion,
         GetConfigOptionNumber,

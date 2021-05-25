@@ -1,8 +1,7 @@
 #pragma once
 
 enum LogiCommands : unsigned int {
-	LogLine = 0,
-	Init,
+	Init = 1,
 	InitWithName,
 	GetSdkVersion,
 	GetConfigOptionNumber,
