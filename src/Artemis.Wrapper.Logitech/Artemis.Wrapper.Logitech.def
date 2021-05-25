@@ -3,6 +3,14 @@ LIBRARY Artemis.Wrapper.Logitech.dll
 EXPORTS
 	LogiLedInit
 	LogiLedInitWithName
+	LogiGetConfigOptionNumber
+	LogiGetConfigOptionBool
+	LogiGetConfigOptionColor
+	LogiGetConfigOptionRect
+	LogiGetConfigOptionRange
+	LogiGetConfigOptionSelect
+	LogiGetConfigOptionKeyInput
+	LogiSetConfigOptionLabel
 	LogiLedSetTargetDevice
 	LogiLedSaveCurrentLighting
 	LogiLedSetLighting

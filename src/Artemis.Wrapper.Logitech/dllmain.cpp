@@ -808,78 +808,60 @@ void LogiLedShutdown()
 }
 
 #pragma region Useless methods
-bool LogiLedGetSdkVersion(int* majorNum, int* minorNum, int* buildNum) 
-{ 
-	if (artemisPipeClient.IsConnected()) {
-		*majorNum = 9;
-		*minorNum = 2;
-		*buildNum = 65;
-		return true;
-	}
-	return false; 
-}
-bool LogiLedGetConfigOptionNumber(const wchar_t* configPath, double* defaultValue) 
+bool LogiGetConfigOptionNumber(const wchar_t* configPath, double* defaultValue) 
 { 
 	if (originalDllWrapper.IsDllLoaded()) {
 		return originalDllWrapper.LogiLedGetConfigOptionNumber(configPath, defaultValue);
 	}
 	return false; 
 }
-bool LogiLedGetConfigOptionBool(const wchar_t* configPath, bool* defaultValue) 
+bool LogiGetConfigOptionBool(const wchar_t* configPath, bool* defaultValue) 
 {
 	if (originalDllWrapper.IsDllLoaded()) {
 		return originalDllWrapper.LogiLedGetConfigOptionBool(configPath, defaultValue);
 	}
 	return false;
 }
-bool LogiLedGetConfigOptionColor(const wchar_t* configPath, int* defaultRed, int* defaultGreen, int* defaultBlue)
+bool LogiGetConfigOptionColor(const wchar_t* configPath, int* defaultRed, int* defaultGreen, int* defaultBlue)
 {
 	if (originalDllWrapper.IsDllLoaded()) {
 		return originalDllWrapper.LogiLedGetConfigOptionColor(configPath, defaultRed, defaultGreen, defaultBlue);
 	}
 	return false;
 }
-bool LogiLedGetConfigOptionRect(const wchar_t* configPath, int* defaultX, int* defaultY, int* defaultWidth, int* defaultHeight) 
+bool LogiGetConfigOptionRect(const wchar_t* configPath, int* defaultX, int* defaultY, int* defaultWidth, int* defaultHeight) 
 {
 	if (originalDllWrapper.IsDllLoaded()) {
 		return originalDllWrapper.LogiLedGetConfigOptionRect(configPath, defaultX, defaultY, defaultWidth, defaultHeight);
 	}
 	return false;
 }
-bool LogiLedGetConfigOptionString(const wchar_t* configPath, wchar_t* defaultValue, int bufferSize) 
-{
-	if (originalDllWrapper.IsDllLoaded()) {
-		return originalDllWrapper.LogiLedGetConfigOptionString(configPath, defaultValue, bufferSize);
-	}
-	return false;
-}
-bool LogiLedGetConfigOptionKeyInput(const wchar_t* configPath, wchar_t* defaultValue, int bufferSize) 
-{
-	if (originalDllWrapper.IsDllLoaded()) {
-		return originalDllWrapper.LogiLedGetConfigOptionKeyInput(configPath, defaultValue, bufferSize);
-	}
-	return false;
-}
-bool LogiLedGetConfigOptionSelect(const wchar_t* configPath, wchar_t* defaultValue, int* valueSize, const wchar_t* values, int bufferSize) 
-{
-	if (originalDllWrapper.IsDllLoaded()) {
-		return originalDllWrapper.LogiLedGetConfigOptionSelect(configPath, defaultValue, valueSize, values, bufferSize);
-	}
-	return false;
-}
-bool LogiLedGetConfigOptionRange(const wchar_t* configPath, int* defaultValue, int min, int max) 
+bool LogiGetConfigOptionRange(const wchar_t* configPath, int* defaultValue, int min, int max)
 {
 	if (originalDllWrapper.IsDllLoaded()) {
 		return originalDllWrapper.LogiLedGetConfigOptionRange(configPath, defaultValue, min, max);
 	}
 	return false;
 }
-bool LogiLedSetConfigOptionLabel(const wchar_t* configPath, wchar_t* label) 
+bool LogiGetConfigOptionSelect(const wchar_t* configPath, wchar_t* defaultValue, int* valueSize, const wchar_t* values, int bufferSize)
+{
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedGetConfigOptionSelect(configPath, defaultValue, valueSize, values, bufferSize);
+	}
+	return false;
+}
+bool LogiGetConfigOptionKeyInput(const wchar_t* configPath, wchar_t* defaultValue, int bufferSize)
+{
+	if (originalDllWrapper.IsDllLoaded()) {
+		return originalDllWrapper.LogiLedGetConfigOptionKeyInput(configPath, defaultValue, bufferSize);
+	}
+	return false;
+}
+bool LogiSetConfigOptionLabel(const wchar_t* configPath, wchar_t* label) 
 {
 	if (originalDllWrapper.IsDllLoaded()) {
 		return originalDllWrapper.LogiLedSetConfigOptionLabel(configPath, label);
 	}
 	return false;
 }
-
 #pragma endregion

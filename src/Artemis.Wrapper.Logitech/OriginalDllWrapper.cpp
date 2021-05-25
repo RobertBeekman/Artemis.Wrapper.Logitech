@@ -51,16 +51,15 @@ void OriginalDllWrapper::LoadFunctions() {
 	LogiLedInit = dll["LogiLedInit"];
 	LogiLedInitWithName = dll["LogiLedInitWithName"];
 
-	LogiLedGetSdkVersion = dll["LogiLedGetSdkVersion"];
-	LogiLedGetConfigOptionNumber = dll["LogiLedGetConfigOptionNumber"];
-	LogiLedGetConfigOptionBool = dll["LogiLedGetConfigOptionBool"];
-	LogiLedGetConfigOptionColor = dll["LogiLedGetConfigOptionColor"];
-	LogiLedGetConfigOptionRect = dll["LogiLedGetConfigOptionRect"];
-	LogiLedGetConfigOptionString = dll["LogiLedGetConfigOptionString"];
-	LogiLedGetConfigOptionKeyInput = dll["LogiLedGetConfigOptionKeyInput"];
-	LogiLedGetConfigOptionSelect = dll["LogiLedGetConfigOptionSelect"];
-	LogiLedGetConfigOptionRange = dll["LogiLedGetConfigOptionRange"];
-	LogiLedSetConfigOptionLabel = dll["LogiLedSetConfigOptionLabel"];
+	LogiLedGetConfigOptionNumber = dll["LogiGetConfigOptionNumber"];
+	LogiLedGetConfigOptionBool = dll["LogiGetConfigOptionBool"];
+	LogiLedGetConfigOptionColor = dll["LogiGetConfigOptionColor"];
+	LogiLedGetConfigOptionRect = dll["LogiGetConfigOptionRect"];
+	LogiLedGetConfigOptionString = dll["LogiGetConfigOptionString"];
+	LogiLedGetConfigOptionKeyInput = dll["LogiGetConfigOptionKeyInput"];
+	LogiLedGetConfigOptionSelect = dll["LogiGetConfigOptionSelect"];
+	LogiLedGetConfigOptionRange = dll["LogiGetConfigOptionRange"];
+	LogiLedSetConfigOptionLabel = dll["LogiSetConfigOptionLabel"];
 
 	LogiLedSetTargetDevice = dll["LogiLedSetTargetDevice"];
 	LogiLedSaveCurrentLighting = dll["LogiLedSaveCurrentLighting"];
