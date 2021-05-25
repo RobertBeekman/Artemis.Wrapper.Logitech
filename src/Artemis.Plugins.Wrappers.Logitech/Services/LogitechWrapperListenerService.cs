@@ -19,6 +19,7 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
         private readonly object _lock;
         private readonly List<LogitechWrapperReader> _readers;
         private readonly Dictionary<LedId, SKColor> _colors;
+        private readonly List<LedId> _excluded;
         private readonly Task _serverLoop;
         private readonly CancellationTokenSource _serverLoopCancellationTokenSource;
 
@@ -42,6 +43,7 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
             _lock = new();
             _colors = new();
             _readers = new();
+            _excluded = new();
             _serverLoopCancellationTokenSource = new();
             _serverLoop = Task.Run(ServerLoop);
         }
@@ -102,6 +104,8 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
                         {
                             _colors[key] = SKColors.Empty;
                         }
+                        _excluded.Clear();
+                        DeviceType = LogiSetTargetDeviceType.All;
                         BackgroundColor = SKColors.Empty;
                         BitmapChanged?.Invoke(this, EventArgs.Empty);
                         break;
@@ -114,7 +118,7 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
                         break;
                     case LogitechCommand.SetLighting:
                         SKColor color = FromSpan(span);
-                        if (DeviceType == LogiSetTargetDeviceType.LOGI_DEVICETYPE_PERKEY_RGB)
+                        if (DeviceType == LogiSetTargetDeviceType.PerKeyRgb)
                         {
                             foreach (LedId key in _colors.Keys)
                             {
@@ -172,7 +176,7 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
                         for (int i = 0; i < LOGI_LED_BITMAP_SIZE; i += 4)
                         {
                             ReadOnlySpan<byte> colorBuff = span.Slice(i, 4);
-                            if (LedMapping.BitmapMap.TryGetValue(i, out LedId l))
+                            if (LedMapping.BitmapMap.TryGetValue(i, out LedId l) && !_excluded.Contains(l))
                             {
                                 //BGRA
                                 _colors[l] = new SKColor(colorBuff[2], colorBuff[1], colorBuff[0], colorBuff[3]);
@@ -181,6 +185,18 @@ namespace Artemis.Plugins.Wrappers.Logitech.Services
                         _logger.Verbose("SetLightingFromBitmap");
 
                         BitmapChanged?.Invoke(this, EventArgs.Empty);
+                        break;
+                    case LogitechCommand.ExcludeKeysFromBitmap:
+                        var excludeCount = BitConverter.ToInt32(span);
+                        for (int i = 0; i < excludeCount; i++)
+                        {
+                            var excludedLogitechLedId = (LogitechLedId)BitConverter.ToInt32(span[(4 + (i * 4))..]);
+                            if (!LedMapping.LogitechLedIds.TryGetValue(excludedLogitechLedId, out var excludedLedId))
+                                continue;
+
+                            if (!_excluded.Contains(excludedLedId))
+                                _excluded.Add(excludedLedId);
+                        }
                         break;
                     default:
                         _logger.Information("Unknown command id: {commandId}.", e.Command);

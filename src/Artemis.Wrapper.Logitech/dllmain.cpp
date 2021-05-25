@@ -567,11 +567,15 @@ bool LogiLedRestoreLightingForKey(LogiLed::KeyName keyName)
 
 bool LogiLedExcludeKeysFromBitmap(LogiLed::KeyName* keyList, int listCount)
 {
+	if (listCount == 0)
+		return false;
+
 	if (artemisPipeClient.IsConnected()) {
 		const unsigned int command = LogiCommands::ExcludeKeysFromBitmap;
 		const unsigned int arraySize =
 			sizeof(arraySize) +
 			sizeof(command) +
+			sizeof(listCount) + 
 			sizeof(LogiLed::KeyName) * listCount;
 
 		std::vector<unsigned char> buff(arraySize, 0);
@@ -583,8 +587,11 @@ bool LogiLedExcludeKeysFromBitmap(LogiLed::KeyName* keyList, int listCount)
 		memcpy(&buff[buffPtr], &command, sizeof(command));
 		buffPtr += sizeof(command);
 
-		memcpy(&buff[buffPtr], keyList, sizeof(int) * listCount);
-		buffPtr += sizeof(int) * listCount;
+		memcpy(&buff[buffPtr], &listCount, sizeof(listCount));
+		buffPtr += sizeof(listCount);
+
+		memcpy(&buff[buffPtr], keyList, sizeof(LogiLed::KeyName) * listCount);
+		buffPtr += sizeof(LogiLed::KeyName) * listCount;
 
 		artemisPipeClient.Write(buff.data(), arraySize);
 		return true;
