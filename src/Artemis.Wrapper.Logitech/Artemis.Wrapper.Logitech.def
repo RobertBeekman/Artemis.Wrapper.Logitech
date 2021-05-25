@@ -2,21 +2,24 @@ LIBRARY Artemis.Wrapper.Logitech.dll
 
 EXPORTS
 	LogiLedInit
+	LogiLedInitWithName
 	LogiLedSetTargetDevice
 	LogiLedSaveCurrentLighting
 	LogiLedSetLighting
 	LogiLedRestoreLighting
 	LogiLedFlashLighting
 	LogiLedPulseLighting
-	LogiLedStopEffects
+	LogiLedExcludeKeysFromBitmap
 	LogiLedSetLightingFromBitmap
 	LogiLedSetLightingForKeyWithScanCode
 	LogiLedSetLightingForKeyWithHidCode
 	LogiLedSetLightingForKeyWithQuartzCode
 	LogiLedSetLightingForKeyWithKeyName
+	LogiLedSetLightingForTargetZone
+	LogiLedPulseSingleKey
+	LogiLedFlashSingleKey
+	LogiLedStopEffectsOnKey
 	LogiLedSaveLightingForKey
 	LogiLedRestoreLightingForKey
-	LogiLedFlashSingleKey
-	LogiLedPulseSingleKey
-	LogiLedStopEffectsOnKey
+	LogiLedStopEffects
 	LogiLedShutdown
