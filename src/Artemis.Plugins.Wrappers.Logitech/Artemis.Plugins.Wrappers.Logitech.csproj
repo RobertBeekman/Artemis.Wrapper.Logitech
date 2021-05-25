@@ -47,6 +47,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Scripts\unpatch-registry.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Scripts\patch-registry.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="plugin.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

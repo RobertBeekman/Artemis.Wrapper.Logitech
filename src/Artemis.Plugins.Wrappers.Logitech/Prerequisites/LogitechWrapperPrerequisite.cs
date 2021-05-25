@@ -11,8 +11,6 @@ namespace Artemis.Plugins.Wrappers.Logitech.Prerequisites
 
         public override string Description => "This registry patch makes games send their lighting to Artemis instead of LGS or LGHUB";
 
-        public override bool RequiresElevation => false;//lol
-
         public override List<PluginPrerequisiteAction> InstallActions { get; }
 
         public override List<PluginPrerequisiteAction> UninstallActions { get; }
@@ -33,15 +31,18 @@ namespace Artemis.Plugins.Wrappers.Logitech.Prerequisites
             _wrapperPath64 = Path.Combine(plugin.Directory.FullName, "x64", DLL_NAME);
             _wrapperPath32 = Path.Combine(plugin.Directory.FullName, "x86", DLL_NAME);
 
+            string patchScript = plugin.ResolveRelativePath("Scripts\\patch-registry.ps1");
+            string unpatchScript = plugin.ResolveRelativePath("Scripts\\unpatch-registry.ps1");
             InstallActions = new List<PluginPrerequisiteAction>
             {
-                new WriteLogitechRegistryPathAction("Patch 64 bit registry", REGISTRY_PATH_64, _wrapperPath64),
-                new WriteLogitechRegistryPathAction("Patch 32 bit registry", REGISTRY_PATH_32, _wrapperPath32)
+                new RunPowerShellAction("Patch 64 bit registry", patchScript, true, $"\"HKLM:{REGISTRY_PATH_64}\" \"{_wrapperPath64}\""),
+                new RunPowerShellAction("Patch 32 bit registry", patchScript, true, $"\"HKLM:{REGISTRY_PATH_32}\" \"{_wrapperPath32}\"")
             };
 
             UninstallActions = new List<PluginPrerequisiteAction>
             {
-
+                new RunPowerShellAction("Patch 64 bit registry", unpatchScript, true, $"\"HKLM:{REGISTRY_PATH_64}\""),
+                new RunPowerShellAction("Patch 32 bit registry", unpatchScript, true, $"\"HKLM:{REGISTRY_PATH_32}\"")
             };
         }
 
